@@ -1,0 +1,74 @@
+create or replace  trigger ejercicio1 
+before insert or update on profesor
+for each row
+begin
+if :new.situacion ='titular' and :new.departamento is null then
+raise_application_error(-20600,'se debe conocer el departamento de '||:new.nombre);
+end if;
+end;
+
+
+
+
+create or replace procedure ejercicio2 (in_area departamento.area%type) is
+cursor c1 is select id, nombre from departamento where area=in_area;
+x departamento.id%type;
+cursor c2 is select codigo, descripcion from curso, imparte where codigo=curso and departamento=x and area=in_area;
+total_sueldo number(8):=0;
+total_prof number(6):=0;
+total_dep number(6):=0;
+no_existe exception;
+no_actividad exception;
+begin
+select count(*) into totaL_dep from departamento where area=in_area;
+if total_dep=0 then raise no_existe; end if;
+select count(*) into total_dep from imparte i, departamento d
+where i.departamento=d.id and area=in_area;
+if total_dep=0 then raise no_actividad; end if;
+for reg in c1 loop
+select count(*), sum(sueldo) into total_prof, total_sueldo from profesor where departamento=reg.id;
+escribir(reg.id||'  '||reg.nombre||' total prof  '|| total_prof);
+update departamento set coste=total_sueldo where id=reg.id;
+x:=reg.id;
+for reg2 in c2 loop
+escribir('     '||reg2.codigo||'   '||reg2.descripcion);
+end loop;
+end loop;
+exception
+when no_existe then
+ escribir('Área desconocida');
+when no_actividad then
+ escribir('Área sin actividad'); 
+ end;
+
+
+
+
+
+create or replace trigger ejercicio3
+before insert or update on imparte
+for each row
+declare 
+
+aux_area_curso curso.area%type;
+aux_area_dep curso.area%type;
+aux_nombre departamento.nombre%type;
+total_prof number(4);
+aux_descripcion curso.descripcion%type;
+begin
+select count(*) into total_prof from profesor where departamento=:new.departamento;
+select nombre, area into aux_nombre, aux_area_dep from departamento where id=:new.departamento;
+if total_prof=0 then
+raise_application_error(-20100,'Departamento '||aux_nombre||' no operativo');
+else
+select area, descripcion into aux_area_curso, aux_descripcion from curso where codigo=:new.curso;
+if aux_area_dep<> aux_area_curso then
+insert into compatibilidad values(:new.departamento, aux_nombre, :new.curso, aux_descripcion);
+end if;
+end if;
+end;
+
+
+
+
+

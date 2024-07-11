@@ -1,0 +1,9 @@
+El ejercicio 2 'copia' presenta un fallo en la escritura del fichero, ya que siempre escribe un salto
+de linea de más. Esto se puede comprobar ya que si lanzamos en la terminal: $diff origen.c destino.c
+Siendo 'origen.c' un Ctr+C Ctr+V de copia.c y, 'destino.c' el fichero generado nos aparecerá una 
+diferencia entre ambos. Ya que con $ls -la (que muestra las propiedades de los archivos de un 
+directorio) existe un byte de diferencia.
+
+¡ARREGLARLO!
+
+Tener en cuenta lo del comentario de 'ejec.c' -> linea 132

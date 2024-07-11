@@ -1,0 +1,349 @@
+
+// Solución Práctica 9: Programación funcional en Swift: clausuras y funciones de orden superior
+
+/*
+-----------------------
+Ejercicio 1: Cuestiones
+-----------------------
+*/
+
+print("Ejercicio 1")
+print("===========")
+print("--- Apartado a")
+
+let nums = [1,2,3,4,5,6,7,8,9,10]
+let resultado1 = nums.filter{$0 % 3 == 0}.count
+print("""
+  a.1) Solución: \(
+    resultado1
+  )\n
+  """)
+// Devuelve la cantidad de números divisibles por 3: 3
+
+let nums2 = [1,2,3,4,5,6,7,8,9,10]
+let resultado2 = nums2.map{$0 + 100}.filter{$0 % 5 == 0}.reduce(0, +)
+print("""
+  a.2) Solución: \(
+    resultado2
+  )\n
+  """)
+// Devuelve la suma de todos los números incrementados en 100 múltiplos de 5: 215
+
+let cadenas = ["En", "un", "lugar", "de", "La", "Mancha"]
+let resultado3 = cadenas.sorted{$0.count < $1.count}.map{$0.count}
+print("""
+  a.3) Solución: \(
+    resultado3
+  )\n
+  """)
+// Devuelve la longitud de cada cadena del array ordenado de menor a mayor por
+// la longitud de las cadenas: [2, 2, 2, 2, 5, 6]
+
+let cadenas2 = ["En", "un", "lugar", "de", "La", "Mancha"]
+let resultado4 = cadenas2.reduce([]) {
+      (res: [(String, Int)], c: String) -> [(String, Int)] in
+        res + [(c, c.count)]}.sorted(by: {$0.1 < $1.1})
+print("""
+  a.3) Solución: \(
+    resultado4
+  )\n
+  """)
+// Devuelve un array de tuplas con cada cadena y su longigud, ordenado
+// de menor a mayor por la longitud (segundo elemento de la tupla):
+// [("En", 2), ("un", 2), ("de", 2), ("La", 2), ("lugar", 5), ("Mancha", 6)]
+
+print("--- Apartado b")
+
+func f(nums: [Int], n: Int) -> Int {
+    return nums.filter{$0 == n}.count
+}
+
+// Explicación de funcionamiento:
+// Dado un array de enteros y un número, devuelve el 
+// número de veces que se repite el número en el array
+
+// Ejemplo:
+print("""
+  b.1) Solución: Cuenta cuantos hay igual a n en un array de enteros.
+    f(nums: [1, 2, 3, 2, 4, 5, 2, 2], n: 2) = \(
+    f(nums: [1, 2, 3, 2, 4, 5, 2, 2], n: 2) )\n
+  """)
+
+
+func g(nums: [Int]) -> [Int] {
+    return nums.reduce([], {(res: [Int], n: Int) -> [Int] in
+                        if !res.contains(n) {
+                            return res + [n]
+                        } else {
+                            return res
+                        }
+                    })
+}
+
+// Explicación de funcionamiento:
+// Elimina duplicados de un array
+
+// Ejemplo:
+
+print("""
+  b.2) Solución: Elimina de un Array de enteros los valores repetidos.
+    g(nums: [1, 2, 3, 2, 4, 3, 2, 2]) = \(
+    g(nums: [1, 2, 3, 2, 4, 3, 2, 2]) )\n
+  """)
+
+func h(nums: [Int], n: Int) -> ([Int], [Int]) {
+   return nums.reduce(([],[]), {(res: ([Int],[Int]), num: Int ) -> ([Int],[Int]) in
+                            if (num >= n) {
+                                return (res.0, res.1 + [num])
+                            } else {
+                                return ((res.0 + [num], res.1))
+                            }
+                        })
+}
+
+// Explicación de funcionamiento:
+// Divide un array de enteros en dos partes: números menores que n 
+// y mayores o iguales que n
+
+let numeros2 = [102, 23, 56, 231, 12, 452]
+let pivote = 100
+let dosArrays = h(nums: numeros2, n: pivote)
+
+print("""
+  b.3) Solución: Devuelve una pareja indicando cuantos elementos de un array de enteros
+                 (nums) son menores y cuantos mayores o iguales que un valor dado (n).
+    h(nums: [1, 2, 3, 4, 5], n: 3) = \(
+    h(nums: [1, 2, 3, 4, 5], n: 3) )\n
+  """)
+
+print("Apartado c")
+
+func suma(palabras: [String], contienen: Character) -> Int {
+  return palabras.filter() {$0.contains(contienen)}.reduce(0) {$0 + $1.count}
+}
+print("""
+  c.1)
+    suma(palabras: \(cadenas), contienen: "a") = \(
+    suma(palabras:   cadenas , contienen: "a") )\n
+  """)
+
+// c.2)
+func sumaMenoresMayores(nums: [Int], pivote: Int) -> (Int, Int) {
+  return nums.reduce((0,0)) {($1<pivote) ? ($0.0+$1, $0.1) : ($0.0, $0.1+$1)}
+}
+print("""
+  c.2)
+    sumaMenoresMayores(nums: \(nums), pivote: 8) = \(
+    sumaMenoresMayores(nums:   nums , pivote: 8) )\n
+  """)
+
+
+/*
+---------------------------
+Ejercicio 2: Arbol Genérico
+---------------------------
+*/
+
+indirect enum Arbol<T> {
+   case nodo(T, [Arbol])
+}
+
+
+let arbolInt: Arbol = .nodo(53, [
+                        .nodo(13, []),
+                        .nodo(32, []),
+                        .nodo(41, [
+                          .nodo(36, []),
+                          .nodo(39, [])
+                          ])
+                        ])
+
+let arbolString: Arbol = .nodo("Zamora", [
+                           .nodo("Buendía", [
+                             .nodo("Albeza", []),
+                             .nodo("Berenguer", []),
+                             .nodo("Bolardo", [])
+                             ]),
+                           .nodo("Galván", [])
+                           ])
+
+/* Versión recursión mutua */
+
+func toArray<T>(arbol: Arbol<T>) -> [T] {
+    switch arbol {
+        case let .nodo(dato, hijos):
+            return [dato] + toArray(bosque: hijos)
+    }
+}
+
+func toArray<T>(bosque: [Arbol<T>]) -> [T] {
+    if let primero = bosque.first {
+        let resto = Array(bosque.dropFirst())
+        return toArray(arbol: primero) + toArray(bosque: resto)
+    } else {
+        return []
+    }
+}
+
+print("Ejercicio 2")
+print("===========")
+print("-- Recursión mutua:")
+print(toArray(arbol: arbolInt))
+print(toArray(arbol: arbolString))
+
+/* Versión FOS */
+
+func toArrayFOS<T>(arbol: Arbol<T>) -> [T] {
+    switch arbol {
+        case let .nodo(dato, hijos):
+            return hijos.map(toArrayFOS).reduce([dato], +)
+    }
+}
+
+print("-- FOS:")
+print(toArrayFOS(arbol: arbolInt))
+print(toArrayFOS(arbol: arbolString))
+
+/*
+-----------------------------
+Ejercicio 3: Listado de notas
+-----------------------------
+*/
+
+import Foundation
+
+// Para hacer más legible las condiciones definimos
+// el typealias en donde damos nombre a cada uno de 
+// los componentes de la tupla
+typealias Calificacion = (nombre: String, 
+                          parcial1: Double,
+                          parcial2: Double,
+                          parcial3: Double,
+                          años: Int)
+
+func imprimirListadoAlumnos(_ alumnos: [Calificacion]) {
+    print("Alumno   Parcial1   Parcial2   Parcial3  Años")
+    for alu in alumnos {
+        alu.0.withCString {
+            print(String(format:"%-10s %5.2f      %5.2f    %5.2f  %3d", $0, alu.1,alu.2,alu.3,alu.4))
+        }
+    }
+}
+
+func imprimirListadosNotas(_ alumnos: [Calificacion]) {
+    var alumnosOrdenados: [Calificacion]
+
+    print("LISTADO ORIGINAL")
+    imprimirListadoAlumnos(alumnos)
+
+    print("LISTADO ORDENADO por Nombre")
+    alumnosOrdenados = alumnos.sorted(by: 
+                 {a1, a2 in a1.nombre < a2.nombre})
+    imprimirListadoAlumnos(alumnosOrdenados)
+
+    print("LISTADO ORDENADO por Parcial1 (decreciente)")
+    alumnosOrdenados = alumnos.sorted(by: 
+                 {a1, a2 in a1.parcial1 > a2.parcial1})
+    imprimirListadoAlumnos(alumnosOrdenados)
+
+    print("LISTADO ORDENADO por Parcial2 (creciente)")
+    alumnosOrdenados = alumnos.sorted(by: {$0.parcial2 < $1.parcial2})
+    imprimirListadoAlumnos(alumnosOrdenados)
+
+    print("LISTADO ORDENADO por Año de Matriculación y Parcial3 (decreciente año y nota)")
+    alumnosOrdenados = alumnos.sorted(by: 
+                  {a1, a2 in
+                   if a1.años == a2.años {
+                     return a1.parcial3 < a2.parcial3
+                   } else {
+                     return a1.años > a2.años
+                   }})
+    imprimirListadoAlumnos(alumnosOrdenados)
+
+    print("LISTADO ORDENADO por Nota final (decreciente)")
+    // Nota para aprobar en Junio = 
+    alumnosOrdenados = alumnos.sorted(by: 
+                  {a1, a2 in
+                   let notaAlumno1 = a1.parcial1 * 0.34 + 
+                                     a1.parcial2 * 0.33 +
+                                     a1.parcial3 * 0.34
+                   let notaAlumno2 = a2.parcial1 * 0.34 + 
+                                     a2.parcial2 * 0.33 +
+                                     a2.parcial3 * 0.34
+                   return notaAlumno1 > notaAlumno2 })
+    imprimirListadoAlumnos(alumnosOrdenados)
+}
+
+// DEMOSTRACIÓN
+
+print("Ejercicio 3")
+print("===========")
+let listaAlumnos: [Calificacion] = [
+                    ("Pepe", 8.45, 3.75, 6.05, 1), 
+                    ("Maria", 9.1, 7.5, 8.18, 1), 
+                    ("Jose", 8.0, 6.65, 7.96, 1),
+                    ("Carmen", 6.25, 1.2, 5.41, 2), 
+                    ("Felipe", 5.65, 0.25, 3.16, 3), 
+                    ("Carla", 6.25, 1.25, 4.23, 2), 
+                    ("Luis", 6.75, 0.25, 4.63, 2), 
+                    ("Loli", 3.0, 1.25, 2.19, 3)]
+imprimirListadosNotas(listaAlumnos)
+
+/*
+------------------------------------
+Ejercicio 4: Expresiones de clausura
+------------------------------------
+*/
+
+
+print("\nEjercicio 4")
+print("===========\n")
+
+
+// A) Número de alumnos que han aprobado primer parcial y suspendido el segundo
+print(listaAlumnos.filter { $0.parcial1 >= 5 && $0.parcial2 < 5}.count)
+
+// B) Alumnos que han aprobado la asignatura
+print(listaAlumnos.map {
+            (alumno) -> (String, Double) in 
+            let nota = alumno.parcial1 * 0.34 + 
+                      alumno.parcial2 * 0.33 +
+                      alumno.parcial3 * 0.34
+            return (alumno.nombre, nota)}
+        .filter {$0.1 >= 5}
+        .map {$0.0})
+
+// C) Nota media de todos los alumnos: tupla (media_p1, media_p2, media_cuest)
+var tupla = listaAlumnos.reduce((0,0,0), {(result, alumno) in 
+                                         return (result.0 + alumno.1, result.1 + alumno.2, result.2 + alumno.3)
+})
+tupla = (tupla.0 / Double(listaAlumnos.count), tupla.1 / Double(listaAlumnos.count), tupla.2 / Double(listaAlumnos.count))
+print(tupla)
+
+/*
+---------------------------------
+Ejercicio 5: construye(operador:)
+---------------------------------
+*/
+
+func construye(operador op: Character) -> (Int, Int) -> Int {
+   return {(op1: Int, op2: Int) -> Int in 
+               switch op {
+                  case "*": 
+                     return op1 * op2
+                  case "/":
+                     return op1 / op2
+                  case "-":
+                     return op1 - op2
+                  default:
+                     return op1 + op2
+               }
+   }
+}
+
+var f = construye(operador: "+")
+print(f(2,3))
+// Imprime 5
+f = construye(operador: "-")
+print(f(2,3))
+// Imprime -1

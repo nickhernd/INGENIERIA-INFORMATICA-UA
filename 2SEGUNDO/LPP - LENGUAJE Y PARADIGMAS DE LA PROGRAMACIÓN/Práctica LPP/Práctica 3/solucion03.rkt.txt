@@ -1,0 +1,300 @@
+#lang racket
+(require rackunit)
+
+;--------------;
+; Ejercicio 1: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (es-prefijo? pal1 pal2)
+  (and (<= (string-length pal1) (string-length pal2))
+       (equal? pal1 (substring pal2 0 (string-length pal1)))))
+
+(check-true (es-prefijo? "" "algo"))
+(check-true (es-prefijo? "ante" "anterior"))
+(check-false (es-prefijo? "antena" "anterior"))
+(check-false (es-prefijo? "antena" "ante"))
+
+(define (contiene-prefijo prefijo lista-pal)
+  (if (null? lista-pal)
+      '()
+      (cons (es-prefijo? prefijo (car lista-pal))
+            (contiene-prefijo prefijo (cdr lista-pal)))))
+
+(check-equal? (contiene-prefijo "ante" '("anterior" "antígona" "antena" "anatema"))
+              '(#t #f #t #f))
+
+;----;
+; b) ;
+;----;
+
+(define (inserta-pos dato pos lista)
+  (if (= pos 0)
+      (cons dato lista)
+      (cons (car lista)
+            (inserta-pos dato (- pos 1) (cdr lista)))))
+
+(check-equal? (inserta-pos 'b 2 '(a a a a)) '(a a b a a))
+(check-equal? (inserta-pos 'b 0 '(a a a a)) '(b a a a a))
+(check-equal? (inserta-pos 'b 4 '(a a a a)) '(a a a a b))
+
+;----;
+; c) ;
+;----;
+
+(define (inserta-ordenada n lista-ordenada)
+  (cond
+    ((null? lista-ordenada) (list n))
+    ((<= n (car lista-ordenada)) (cons n lista-ordenada))
+    (else (cons (car lista-ordenada)
+                (inserta-ordenada n (cdr lista-ordenada))))))
+
+(check-equal? (inserta-ordenada 10 '(-8 2 3 11 20)) '(-8 2 3 10 11 20))
+
+(define (ordena lista)
+  (if (null? lista)
+      '()
+      (inserta-ordenada (car lista) (ordena (cdr lista)))))
+
+(check-equal? (ordena '(2 -1 100 4 -6)) '(-6 -1 2 4 100))
+
+
+;--------------;
+; Ejercicio 2: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (expande-pareja pareja)
+  (if (= (cdr pareja) 0)
+      '()
+      (cons (car pareja)
+            (expande-pareja (cons (car pareja)
+                                  (- (cdr pareja) 1))))))
+
+(check-equal? (expande-pareja '(#f . 5)) '(#f #f #f #f #f))
+
+(define (expande-lista lista-parejas)
+  (if (null? lista-parejas)
+      '()
+      (append (expande-pareja (car lista-parejas))
+              (expande-lista (cdr lista-parejas)))))
+
+(define (expande-parejas . lista-parejas)
+  (expande-lista lista-parejas))
+
+(check-equal? (expande-parejas '(#t . 3) '("LPP" . 2) '(b . 4)) 
+              '(#t #t #t "LPP" "LPP" b b b b))
+
+;----;
+; b) ;
+;----;
+
+(define (expande2 lista)
+  (cond
+    ((null? lista) '())
+    ((and (integer? (car lista))
+          (positive? (car lista)))
+     (append (expande-pareja (cons (cadr lista)
+                                   (car lista)))
+             (expande2 (cddr lista))))
+    (else (cons (car lista) (expande2 (cdr lista))))))
+
+(check-equal? (expande2 '(4 clase ua 3 lpp aulario))
+              '(clase clase clase clase ua lpp lpp lpp aulario))
+
+
+;--------------;
+; Ejercicio 3: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (combina-elemento elemento lista-conjuntos)
+  (if (null? lista-conjuntos)
+      '()
+      (cons (cons elemento
+                  (car lista-conjuntos))
+            (combina-elemento elemento
+                            (cdr lista-conjuntos)))))
+
+(check-equal? (combina-elemento 'a '((b c) (b) (c) ())) '((a b c) (a b) (a c) (a)))
+
+(define (amplia-potencia elemento lista-conjuntos)
+  (append (combina-elemento elemento lista-conjuntos)
+          lista-conjuntos))
+
+(check-equal? (amplia-potencia 'a '((b c) (b) (c) ()))
+              '((a b c) (a b) (a c) (a) (b c) (b) (c) ()))
+
+(define (conjunto-potencia lista)
+  (if (null? lista)
+      (list '())
+      (amplia-potencia (car lista)
+                       (conjunto-potencia (cdr lista)))))
+
+(check-equal? (conjunto-potencia '(a b c))
+              '((a b c) (a b) (a c) (a) (b c) (b) (c) ()))
+
+;----;
+; b) ;
+;----;
+
+(define (crea-parejas elemento lista)
+  (if (null? lista)
+      '()
+      (cons (cons elemento (car lista))
+            (crea-parejas elemento (cdr lista)))))
+  
+(define (producto-cartesiano lista-1 lista-2)
+  (if (null? lista-1)
+      '()
+      (append (crea-parejas (car lista-1) lista-2)
+              (producto-cartesiano (cdr lista-1) lista-2))))
+
+(check-equal? (producto-cartesiano '(1 2) '(1 2 3))
+              '((1 . 1) (1 . 2) (1 . 3) (2 . 1) (2 . 2) (2 . 3)))
+
+
+;--------------;
+; Ejercicio 4: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(check-equal? ((lambda (x) (* x x)) 3) 9)
+(check-equal? ((lambda () (+ 6 4))) 10)
+(check-equal? ((lambda (x y) (* x (+ 2 y))) (+ 2 3) 4) 30)
+;((lambda (x y) (* x (+ 2 x))) 5) ; ⇒ Le falta un argumento:
+(check-equal? ((lambda (x y) (* x (+ 2 x))) 5 0) 35)
+
+(define f (lambda (a b) (string-append "***" a b "***")))
+(define g f)
+(check-true (procedure? g)) ; ⇒ Cierto que g es una función (igual que f):
+(check-equal? (g "Hola" "Adios") "***HolaAdios***")
+
+;----;
+; b) ;
+;----;
+
+(define suma-3
+  (lambda (x) (+ x 3)))
+
+(check-equal? (suma-3 2) 5)
+
+(define factorial
+  (lambda (x)
+    (if (= x 0)
+        1
+        (* x (factorial (- x 1))))))
+
+(check-equal? (factorial 3) 6)
+
+;----;
+; c) ;
+;----;
+
+(define (doble x)
+   (* 2 x))
+
+(define (foo f g x y)
+   (f (g x) y))
+
+(define (bar f p x y)
+   (if (and (p x) (p y))
+       (f x y)
+       'error))
+
+;(foo + 10 doble 15) ; ⇒ 10 debía ser una función de un solo argumento (como doble)
+;(foo doble + 10 15) ; ⇒ doble es de un solo argumento y debería permitir dos (como +)
+(check-equal? (foo + doble 10 15) 35)
+(check-equal? (foo string-append (lambda (x) (string-append "***" x)) "Hola" "Adios")
+              "***HolaAdios")
+
+;(bar doble number? 10 15)
+; ⇒ Si 10 y 15 son números, doble los debería admilir a los dos como argumentos
+(check-equal? (bar string-append string? "Hola" "Adios") "HolaAdios")
+;Devuelve el símbolo error en lugar de intentar sumar "Hola" y 5:
+(check-equal? (bar + number? "Hola" 5) 'error)
+
+
+;--------------;
+; Ejercicio 5: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (crea-carta pareja)
+  (string->symbol (string (cdr pareja) (car pareja))))
+
+(check-equal? (crea-carta '(#\u2665 . #\Q)) 'Q♥)
+
+(define (crea-baraja lista-parejas)
+  (if (null? lista-parejas)
+      '()
+      (cons (crea-carta (car lista-parejas))
+            (crea-baraja (cdr lista-parejas)))))
+
+(check-equal? (crea-baraja '((#\u2660 . #\A)
+                             (#\u2663 . #\2) 
+                             (#\u2665 . #\3)
+                             (#\u2666 . #\R)))
+              '(A♠ 2♣ 3♥ R♦))
+
+;----;
+; b) ;
+;----;
+
+(define palos '(#\u2660 #\u2663 #\u2665 #\u2666))
+(define valores '(#\A #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\0 #\J #\Q #\K))
+
+(define (baraja-poker)
+  (crea-baraja
+   (producto-cartesiano palos valores)))
+
+(baraja-poker) ; ⇒ (A♠ 2♠ 3♠ ...K♠ A♣ 2♣ ... K♣ A♥ 2♥ ... K♥ A♦ 2♦ ... Q♦ K♦)
+
+;----;
+; c) ;
+;----;
+
+(define (mezcla lista)
+  (if (null? lista)
+      '()
+      (inserta-pos (car lista)
+                   (random 0 (length lista))
+                   (mezcla (cdr lista)))))
+
+(mezcla '(1 2 3 4 5 6))
+(mezcla (baraja-poker))
+
+
+;--------------;
+; Ejercicio 6: ;
+;--------------;
+
+(define (filtra-simbolos lista-simbolos lista-num)
+  (cond
+    ((or (null? lista-simbolos) (null? lista-num)) '())
+    ((= (string-length (symbol->string (car lista-simbolos)))
+        (car lista-num))
+     (cons (cons (car lista-simbolos)
+                 (car lista-num))
+           (filtra-simbolos (cdr lista-simbolos)
+                            (cdr lista-num))))
+    (else (filtra-simbolos (cdr lista-simbolos)
+                           (cdr lista-num)))))
+
+(check-equal? (filtra-simbolos '(este es un ejercicio de examen) '(2 1 2 9 1 6))
+              '((un . 2) (ejercicio . 9) (examen . 6)))

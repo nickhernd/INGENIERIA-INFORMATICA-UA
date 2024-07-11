@@ -1,0 +1,670 @@
+-- BD Hotel (para grupo Castellano y valenciano)
+
+create table temporada (nombre varchar(5) constraint pk_temporada primary key);
+alter table temporada add constraint ck_temporada_nombre check(nombre in('BAJA','MEDIA','ALTA'));
+
+create table categoria (
+nombre varchar(2)  constraint pk_categoria primary key,
+descripcion varchar(80),
+supmin number(4,2) not null,
+supmax number(4,2),
+constraint ck_categoria_nombre check (nombre in ('D','DT','I','S'))
+);
+alter table categoria modify descripcion not null;
+
+
+create table pvptemporada (
+categoria varchar(2) constraint fk_pvptemporada_categoria references categoria,
+temporada varchar(5) constraint fk_pvptemporada_temporada references temporada,
+psa number(3),
+pad number(3),
+pmp number(3),
+ppc number(3),
+constraint pk_pvptemporada primary key (categoria,temporada)
+);
+alter table pvptemporada modify psa default 60; 
+
+create table habitacion (
+numero number(3) constraint pk_habitacion primary key,
+categoria varchar(2) not null,
+constraint fk_habitacion_categoria foreign key(categoria)  references categoria
+);
+alter table habitacion add (superficie number(4,2), piso number(2));
+
+create table CALENDARIO (
+fecha date constraint pk_calendario primary key, 
+temporada varchar2(5),
+constraint fk_calendario_temporada foreign key(temporada) references temporada);
+
+
+create table HORA (
+hora number(2) constraint pk_hora primary key);
+
+
+create table ACTIVIDAD (
+codigo char(4) constraint pk_actividad primary key,
+descripcion varchar2(100) not null);
+ 
+create table HORARIO (
+fecha date constraint fk_horario_calendario references calendario,
+hora number(2) constraint fk_horario_hora references hora, 
+actividad char(4) not null constraint fk_horario_actividad references actividad,
+constraint pk_horario primary key(fecha,hora),
+constraint cu_fecha_actividad unique(fecha,actividad));
+
+create table Actninos(
+actividad char(4) constraint pk_actninos primary key 
+constraint fk_actninos_actividad references actividad);
+
+create table ActADULTOS(
+actividad char(4) constraint pk_actadultos primary key 
+constraint fk_actadultos_actividad references actividad);
+
+create table ActTODOS(
+actividad char(4) constraint pk_acttodos primary key 
+constraint fk_acttodos_actividad references actividad);
+
+create table sustninos(
+activ1 char(4) constraint fk_sustninos_actni1 references actninos,
+activ2 char(4) constraint fk_sustninos_actni2 references actninos,
+constraint pk_sustninos primary key(activ1, activ2)); 
+
+create table sustadultos(
+activ1 char(4) constraint fk_sustadultos_actad1 references actadultos,
+activ2 char(4) constraint fk_sustadultos_actad2 references actadultos,
+constraint pk_sustadultos primary key(activ1, activ2)); 
+
+create table susttodos(
+activ1 char(4) constraint fk_susttodos_acttodos1 references acttodos,
+activ2 char(4) constraint fk_susttodos_acttodos2 references acttodos,
+constraint pk_susttodos primary key(activ1, activ2)); 
+
+CREATE TABLE SERVICIO(
+codigo char(4) constraint cp_servicio primary key,
+ descripcion varchar2(30),
+ precio number(5,2));
+
+CREATE TABLE CLIENTE(
+nif char(9) constraint cp_cliente primary key,
+nombre varchar2(40) not null,
+telefono  char(11) not null,
+localidad varchar2(40),
+provincia varchar2(30),
+pais varchar2(30));
+
+CREATE TABLE RESERVA(
+codigo number(6) constraint cp_reserva primary key,
+cliente char(9) references CLIENTE);
+
+CREATE TABLE CALENDRESERVAS(
+habitacion number(3) constraint fk_calendreservas_habitacion references HABITACION,
+fecha date constraint calendreservas_calendario references CALENDARIO,
+camasup char(2),
+reserva number(6) constraint fk_calendreservas_reserva references reserva,
+alimentacion char(2) constraint valor_alimentacion check (alimentacion in ('SA','AD', 'MP','PC')),
+constraint cp_calendreservas primary key(habitacion, fecha));
+
+--de la sesión de procedimientos (se añade directamente como columna en la tabla anterior)
+--alter table calendreservas 
+--add alimentacion char(2) constraint valor_alimentacion check (alimentacion in ('SA','AD', 'MP','PC'));
+
+CREATE TABLE CONSUMIR(
+habitación number(3),
+fecha date,
+servicio char(4) constraint fk_consumir_servicio references servicio,
+cantidad number(2),
+constraint  fk_consumir_calendreservas foreign key(habitación, fecha)  references calendreservas,
+constraint pk_consumir primary key(habitación, fecha, servicio));
+
+CREATE TABLE EMPLEADO(
+nif char(9) constraint cp_empleado primary key,
+nombre varchar2(40),
+dirección varchar2(30),
+población varchar2(30),
+telefono char(9),
+estudios  varchar2(50));
+
+
+CREATE TABLE EMPANIMACION(
+nif char(9) constraint fk_empanimacion_empleado references empleado 
+constraint pk_empanimacion primary key);
+
+CREATE TABLE EMPSERVICIOS(
+nif char(9) constraint fk_empservicios_empleado references empleado 
+constraint pk_empservicios primary key);
+
+CREATE TABLE EMPLIMPIEZA(
+nif char(9) constraint fk_emplimpieza_empleado references empleado 
+constraint pk_emplimpieza primary key);
+
+CREATE TABLE EMPRESTAURANTE(
+nif char(9) constraint fk_emprestaurante_empleado references empleado 
+constraint pk_emprestaurante primary key);
+
+CREATE TABLE EMPRECEPCION(
+nif char(9) constraint fk_emprecepcion_empleado references empleado 
+constraint pk_emprecepcion primary key);
+
+--Habrá que controlar que la generalización de EMPLEADO es TOTAL y DISJUNTA.
+
+CREATE TABLE AGENCIAVIAJES(
+cif char(9) constraint pk_agenciaviajes primary key,
+nombre varchar2(30),
+telefono char(9));
+
+CREATE TABLE RESAGENCIA(
+reserva number(6) constraint fk_resagencia_reserva references reserva
+constraint pk_resagencia primary key,
+agencia char(9) constraint fk_resagencia_agencia references agenciaviajes not null,
+emprecepcion char(9) constraint fk_resagencia_emprecepcion  references emprecepcion not null);
+
+CREATE TABLE RESTELEFONO(
+reserva number(6) constraint fk_restelefono_reserva references reserva 
+constraint pk_restelefono primary key,
+emprecepcion char(9) constraint fk_restelefono_emprecepcion references emprecepcion  not null);
+
+CREATE TABLE RESHOTEL(
+reserva number(6)  constraint fk_reshotel_reserva references reserva
+ constraint pk_reshotel primary key,
+emprecepcion char(9) constraint fk_reshotel_emprecepcion references emprecepcion  not null);
+
+CREATE TABLE RESINTERNET (
+reserva number(6)  constraint fk_resinternet_reserva references reserva
+ constraint pk_resinternet primary key,
+localizador number(6)  not null);
+
+--Habrá que controlar que la generalización de EMPLEADO es TOTAL y DISJUNTA.
+
+CREATE TABLE TRATAMIENTO(
+codigo char(5) constraint pk_tratamiento primary key,
+observaciones varchar2(50),
+precio number(3) not null);
+
+CREATE TABLE REALIZAR(
+tratamiento char(5) constraint fk_realizar_tratamiento references tratamiento,
+empleado char(9) constraint fk_realizar_empservicios references empservicios,
+constraint pk_realizar primary key(tratamiento, empleado));
+
+CREATE TABLE CITA(
+fecha date,
+momento number(1) constraint check_momento check(momento between 1 and 6),
+empleado char(9),
+cliente char(9) constraint fk_cita_cliente references cliente not null,
+tratamiento char(5)  not null,
+constraint pk_cita primary key(fecha, momento, empleado),
+constraint fk_cita_realizar foreign key (tratamiento, empleado) references realizar);
+
+--Para controlar que el empleado de servicio realice el servicio de la cita se ha dirigido
+-- la clave ajena compuesta a la tabla realizar. Siguiendo las reglas de transformación 
+-- del EER al MR tendríamos dos claves ajenas empleado y tratamiento hacia sus respectivas tablas.
+
+
+----- INSERCINES/ ACTUALIZACIONES
+--algunos inserts están cogidos de las soluciones de los ejercicios propuestos para las sesiones de prácticas
+
+
+
+insert into ACTIVIDAD values ('FUT', 'Campeonato de Futbol');
+insert into ACTIVIDAD values ('AJE', 'Torneo de Ajedrez');
+insert into ACTIVIDAD values ('PET', 'Torneo de Petanca');
+insert into ACTIVIDAD values ('BAI', 'Baile de Salon');
+insert into ACTIVIDAD values ('PAR', 'Torneo de Parchis');
+insert into ACTIVIDAD values ('SEND', 'Senderismo');
+insert into ACTIVIDAD values ('GOLF', 'Iniciacion al Golf');
+insert into ACTIVIDAD values ('PING', 'Campeonato de Ping Pong');
+
+insert into ACTADULTOS values ('AJE');
+insert into ACTADULTOS values ('PET');
+insert into ACTADULTOS values ('BAI');
+insert into ACTADULTOS values ('PAR');
+insert into ACTADULTOS values ('SEND');
+insert into ACTADULTOS values ('GOLF');
+insert into ACTADULTOS values ('FUT');
+
+insert into SUSTADULTOS values ('AJE', 'PAR');
+insert into SUSTADULTOS values ('PET', 'PAR');
+insert into SUSTADULTOS values ('BAI', 'PAR');
+insert into SUSTADULTOS values ('SEND', 'GOLF');
+insert into SUSTADULTOS values ('SEND', 'BAI');
+insert into SUSTADULTOS values ('FUT', 'BAI');
+insert into SUSTADULTOS values ('GOLF', 'BAI');
+
+
+insert into HORA values (10);
+insert into HORA values (12);
+insert into HORA values (18);
+insert into HORA values (20);
+insert into HORA values (22);
+
+
+-- inserts en temporada realizados en ejercicios de la sesión de Def y manipulacion de datos. Dará error si ya tenemos esas filas insertadas.
+insert into TEMPORADA values('ALTA');
+insert into TEMPORADA values('BAJA');
+insert into TEMPORADA values('MEDIA');
+
+insert into calendario values('01/11/2012', 'BAJA');
+insert into calendario values('02/11/2012', 'BAJA');
+insert into calendario values('03/11/2012', 'BAJA');
+insert into calendario values('04/11/2012', 'BAJA');
+insert into calendario values('05/11/2012', 'BAJA');
+insert into calendario values('06/11/2012', 'BAJA');
+insert into calendario values('07/11/2012', 'BAJA');
+insert into calendario values('08/11/2012', 'BAJA');
+insert into calendario values('09/11/2012', 'BAJA');
+insert into calendario values('10/11/2012', 'BAJA');
+insert into calendario values('11/11/2012', 'BAJA');
+insert into calendario values('12/11/2012', 'BAJA');
+insert into calendario values('13/11/2012', 'BAJA');
+insert into calendario values('14/11/2012', 'BAJA');
+insert into calendario values('15/11/2012', 'BAJA');
+insert into calendario values('16/11/2012', 'BAJA');
+insert into calendario values('17/11/2012', 'BAJA');
+insert into calendario values('18/11/2012', 'BAJA');
+insert into calendario values('19/11/2012', 'BAJA');
+insert into calendario values('20/11/2012', 'BAJA');
+insert into calendario values('21/11/2012', 'BAJA');
+insert into calendario values('22/11/2012', 'BAJA');
+insert into calendario values('23/11/2012', 'BAJA');
+insert into calendario values('24/11/2012', 'BAJA');
+insert into calendario values('25/11/2012', 'BAJA');
+insert into calendario values('26/11/2012', 'BAJA');
+insert into calendario values('27/11/2012', 'BAJA');
+
+insert into calendario values('01/02/2013', 'BAJA');
+insert into calendario values('02/02/2013', 'BAJA');
+insert into calendario values('03/02/2013', 'BAJA');
+insert into calendario values('04/02/2013', 'BAJA');
+insert into calendario values('05/02/2013', 'BAJA');
+insert into calendario values('06/02/2013', 'BAJA');
+insert into calendario values('07/02/2013', 'BAJA');
+insert into calendario values('08/02/2013', 'BAJA');
+insert into calendario values('09/02/2013', 'BAJA');
+insert into calendario values('10/02/2013', 'BAJA');
+insert into calendario values('11/02/2013', 'BAJA');
+insert into calendario values('12/02/2013', 'BAJA');
+insert into calendario values('13/02/2013', 'BAJA');
+insert into calendario values('14/02/2013', 'BAJA');
+insert into calendario values('15/02/2013', 'BAJA');
+insert into calendario values('16/02/2013', 'BAJA');
+insert into calendario values('17/02/2013', 'BAJA');
+insert into calendario values('18/02/2013', 'BAJA');
+insert into calendario values('19/02/2013', 'BAJA');
+insert into calendario values('20/02/2013', 'BAJA');
+insert into calendario values('21/02/2013', 'BAJA');
+insert into calendario values('22/02/2013', 'BAJA');
+insert into calendario values('23/02/2013', 'BAJA');
+insert into calendario values('24/02/2013', 'BAJA');
+insert into calendario values('25/02/2013', 'BAJA');
+insert into calendario values('26/02/2013', 'BAJA');
+insert into calendario values('27/02/2013', 'BAJA');
+insert into calendario values('28/02/2013', 'BAJA');
+
+insert into calendario values('01/03/2013', 'MEDIA');
+insert into calendario values('02/03/2013', 'MEDIA');
+insert into calendario values('03/03/2013', 'MEDIA');
+insert into calendario values('04/03/2013', 'MEDIA');
+insert into calendario values('05/03/2013', 'MEDIA');
+insert into calendario values('06/03/2013', 'MEDIA');
+insert into calendario values('07/03/2013', 'MEDIA');
+insert into calendario values('08/03/2013', 'MEDIA');
+insert into calendario values('09/03/2013', 'MEDIA');
+insert into calendario values('10/03/2013', 'MEDIA');
+insert into calendario values('11/03/2013', 'MEDIA');
+insert into calendario values('12/03/2013', 'MEDIA');
+insert into calendario values('13/03/2013', 'MEDIA');
+insert into calendario values('14/03/2013', 'MEDIA');
+insert into calendario values('15/03/2013', 'MEDIA');
+
+
+insert into calendario values('01/08/2013', 'ALTA');
+insert into calendario values('02/08/2013', 'ALTA');
+insert into calendario values('03/08/2013', 'ALTA');
+insert into calendario values('04/08/2013', 'ALTA');
+insert into calendario values('05/08/2013', 'ALTA');
+insert into calendario values('06/08/2013', 'ALTA');
+insert into calendario values('07/08/2013', 'ALTA');
+insert into calendario values('08/08/2013', 'ALTA');
+insert into calendario values('09/08/2013', 'ALTA');
+insert into calendario values('10/08/2013', 'ALTA');
+insert into calendario values('11/08/2013', 'ALTA');
+insert into calendario values('12/08/2013', 'ALTA');
+insert into calendario values('13/08/2013', 'ALTA');
+insert into calendario values('14/08/2013', 'ALTA');
+insert into calendario values('15/08/2013', 'ALTA');
+insert into calendario values('16/08/2013', 'ALTA');
+insert into calendario values('17/08/2013', 'ALTA');
+insert into calendario values('18/08/2013', 'ALTA');
+insert into calendario values('19/08/2013', 'ALTA');
+insert into calendario values('20/08/2013', 'ALTA');
+insert into calendario values('21/08/2013', 'ALTA');
+insert into calendario values('22/08/2013', 'ALTA');
+insert into calendario values('23/08/2013', 'ALTA');
+insert into calendario values('24/08/2013', 'ALTA');
+insert into calendario values('25/08/2013', 'ALTA');
+insert into calendario values('26/08/2013', 'ALTA');
+insert into calendario values('27/08/2013', 'ALTA');
+insert into calendario values('28/08/2013', 'ALTA');
+insert into calendario values('29/08/2013', 'ALTA');
+insert into calendario values('30/08/2013', 'ALTA');
+insert into calendario values('31/08/2013', 'ALTA');
+
+-- Una actividad no puede repetirse el mismo dia.
+-- A la misma hora no puede haber 2 actividades.
+insert into HORARIO values ('15/08/2013',20,'AJE');
+insert into HORARIO values ('16/08/2013',12,'PET');
+insert into HORARIO values ('15/08/2013',22,'BAI');
+insert into HORARIO values ('15/08/2013',10,'SEND');
+insert into HORARIO values ('15/08/2013',18,'FUT');
+insert into HORARIO values ('15/08/2013',12,'GOLF');
+insert into HORARIO values ('16/08/2013',18,'FUT');
+
+-----------------------------------------------------------------------
+
+---- TABLAS YA CREADAS A LAS QUE FALTA RELACIONAR CON LAS NUEVAS
+
+ALTER TABLE CALENDARIO
+add emplimpieza char(9) constraint fk_calendario_emplimpieza references emplimpieza;
+
+ALTER TABLE CALENDARIO
+add reserva number(6) constraint fk_calendario_reserva references reserva;
+
+ALTER TABLE ACTIVIDAD
+add empanimacion char(9) constraint fk_actividad_empanimacion references empanimacion;
+
+------------------------------------------------------------------------
+
+
+insert into categoria(nombre, descripcion, supmin) 
+values ('S','SECADOR, MINIBAR, HIDROMASAJE, ADMITE SUPLETORIA',25);
+--------------------------------------------------------------------------
+
+--inserts de la sesión 3
+insert into categoria(nombre, descripcion, supmin) 
+values ('D','SECADOR, MINIBAR, AMPLIA, DOS CAMAS, ADMITE SUPLETORIA',15);
+
+insert into categoria(nombre, descripcion, supmin) 
+values ('DT','SECADOR, MINIBAR, AMPLIA, DOS CAMAS, ADMITE SUPLETORIA, TERRAZA AL PARQUE',15);
+
+insert into categoria(nombre, descripcion, supmin) 
+values ('I','UNA CAMA, SECADOR',12);
+
+
+-- algunos inserts de la sesión ORACLE_DefManipDatos (ejerc 4) combinados con los updates de la sesión IntroPLSQL ejer 3(you may have already these values in the database inserted)
+insert into habitacion values(1,'D',17,2);
+insert into habitacion values(2,'D',14,3);
+insert into habitacion values(3,'D',18,4);
+insert into HABITACION values(4,'I',12,5);
+insert into HABITACION values(5,'DT',18,2);
+insert into HABITACION values(6,'DT',19,3);
+INSERT INTO HABITACION VALUES(7,'S',null,null);
+
+
+insert into pvptemporada values ('S','BAJA', 100, 105, 125,135);
+insert into pvptemporada values ('S','MEDIA', 115, 120, 130, 145);
+insert into pvptemporada values ('S','ALTA', 140, 145, 160, 175);
+
+update pvptemporada set pSA= 75, pAD= 80, pMP= 95, pPC= 110 where categoria='DT' and temporada='BAJA';
+update pvptemporada set pSA= 75, pAD= 85, pMP= 100, pPC= 120 where categoria='DT' and temporada='MEDIA';
+update pvptemporada set pSA= 75, pAD= 90, pMP= 105, pPC= 130 where categoria='DT' and temporada='ALTA';
+
+-----------------------------------------------------------------------------------------
+-----------------------------------------------------------------------------------------
+
+insert into EMPLEADO values ('21455588A','Alicia Martínez Escolano','Rueda 25','Alicante','686112233','Administrativo');
+insert into EMPLEADO values ('22222222B','Alberto Manresa Ruiz','Molinos 32','Calpe','656543201','Administrativo');
+insert into EMPLEADO values ('33333333C','Mario Campos Rojo','Huertas grandes 27','Altea','686768999','Curso de animador social');
+insert into EMPLEADO values ('44444444D','Maria López Sánchez','Almirante 27','Alicante','649172324',NULL);
+insert into EMPLEADO values ('55555555D','Raul León Escobar','Hacienda 27','Altea','966756543',NULL);
+insert into EMPLEADO values ('66666666D','Roberto Escobar García','Hacienda 27','Altea','966756543',NULL);
+-----------------------------------------------------------------------------------
+insert into EMPLIMPIEZA values('44444444D');
+insert into EMPLIMPIEZA values('55555555D');
+insert into EMPLIMPIEZA values('66666666D');
+insert into EMPANIMACION values('33333333C');
+------------------------------------------------------------------------------------
+update calendario set emplimpieza='44444444D' where fecha='01/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='02/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='03/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='04/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='05/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='06/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='07/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='08/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='09/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='10/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='11/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='12/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='13/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='14/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='15/11/2012';
+update calendario set emplimpieza='44444444D' where fecha='16/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='17/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='18/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='19/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='20/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='21/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='22/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='23/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='24/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='25/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='26/11/2012';
+update calendario set emplimpieza='55555555D' where fecha='27/11/2012';
+
+
+
+update calendario set emplimpieza='44444444D' where fecha='05/03/2013';
+update calendario set emplimpieza='44444444D' where fecha='07/03/2013';
+update calendario set emplimpieza='44444444D' where fecha='09/03/2013';
+update calendario set emplimpieza='55555555D' where fecha='11/03/2013';
+update calendario set emplimpieza='55555555D' where fecha='12/03/2013';
+
+
+update calendario set emplimpieza='44444444D' where fecha='01/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='02/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='03/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='04/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='05/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='06/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='07/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='08/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='09/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='10/08/2013';
+update calendario set emplimpieza='44444444D' where fecha='11/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='12/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='13/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='14/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='15/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='16/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='17/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='18/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='19/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='20/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='21/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='22/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='23/08/2013';
+update calendario set emplimpieza='55555555D' where fecha='24/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='25/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='26/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='27/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='28/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='29/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='30/08/2013';
+update calendario set emplimpieza='66666666D' where fecha='31/08/2013';
+
+
+-------------------------------------------------------
+insert into SERVICIO values ('AG01','Agua mineral sin gas', 1.5);
+insert into SERVICIO values ('AG02','Agua mineral con gas', 1.5);
+insert into SERVICIO values ('RE01','Coca-cola', 2.5);
+insert into SERVICIO values ('RE02','Fanta naranja', 2.5);
+insert into SERVICIO values ('RE03','Fanta limón', 2.5);
+insert into SERVICIO values ('CE01','Cerveza Mahou 0.0', 2.5);
+insert into SERVICIO values ('CE02','Cerveza Heineken', 2.5);
+insert into SERVICIO values ('SN01','Almendras', 2.5);
+insert into SERVICIO values ('SN02','Chips', 1.5);
+insert into SERVICIO values ('SN03','Mars', 1.5);
+-------------------------------------------------------------------
+
+insert into CLIENTE values ('21446688A','Almudena Urquijo Martínez','686756743','San Martín de Valdeiglesias', 'Madrid', 'España');
+insert into CLIENTE values ('45113377M','Javier Robledo Cañizares','656769903','Denia', 'Alicante', 'España');
+insert into CLIENTE values ('21123456Z','Sara Pérez Caballero','656769903','Vinaroz', 'Castellón', 'España');
+insert into CLIENTE values ('21778899P','Pablo Álvarez Redondo','646577816','San Juan', 'Alicante', 'España');
+insert into CLIENTE values ('45987688P','Pedro Bernabeu Ramos','577151586','Alicante', 'Alicante', 'España');
+insert into CLIENTE values ('21668899P','Nicolás Álvarez Redondo','646577816','Elche', 'Alicante', 'España');
+insert into CLIENTE values ('X21778800','Natalia Ramos Rico','656487502','Roma', 'Roma', 'Italia');
+-----------------------------------------------------------------------------
+insert into RESERVA values (1, '21446688A');
+insert into RESERVA values (2, '45113377M');
+insert into RESERVA values (3, '21123456Z');
+insert into RESERVA values (4, '21446688A');
+insert into RESERVA values (5, '21446688A');
+insert into RESERVA values (6, '45113377M');
+insert into RESERVA values (7, '45987688P');
+---------------------------------------------------------------------------------
+insert into CALENDRESERVAS values(1,'10/11/2012','NO',1,'MP');
+insert into CALENDRESERVAS values(1,'12/11/2012','NO',2,'MP');
+insert into CALENDRESERVAS values(2,'12/11/2012','NO',2,'MP');
+insert into CALENDRESERVAS values(1,'13/11/2012','NO',2,'MP');
+insert into CALENDRESERVAS values(2,'13/11/2012','NO',2,'MP');
+insert into CALENDRESERVAS values(1,'14/11/2012','NO',3,'MP');
+insert into CALENDRESERVAS values(2,'14/11/2012','NO',3,'MP');
+insert into CALENDRESERVAS values(3,'14/11/2012','NO',3,'MP');
+insert into CALENDRESERVAS values(1,'15/11/2012','NO',3,'AD');
+insert into CALENDRESERVAS values(2,'15/11/2012','NO',3,'AD');
+insert into CALENDRESERVAS values(3,'15/11/2012','NO',3,'AD');
+insert into CALENDRESERVAS values(7,'15/11/2012','NO',4,'SA');
+insert into CALENDRESERVAS values(4,'15/11/2012','NO',5,'PC');
+insert into CALENDRESERVAS values(4,'16/11/2012','NO',6,'AD');
+insert into CALENDRESERVAS values(3,'16/11/2012','SI',7,'PC');
+
+----------------------------------------------------------------------
+insert into CONSUMIR values(1,'10/11/2012','AG01',2);
+insert into CONSUMIR values(1,'10/11/2012','SN01',1);
+insert into CONSUMIR values(1,'10/11/2012','SN02',1);
+insert into CONSUMIR values(1,'12/11/2012','AG02',1);
+insert into CONSUMIR values(2,'12/11/2012','AG02',2);
+-------------------------
+update ACTIVIDAD set empanimacion='33333333C' where codigo='PET';
+update ACTIVIDAD set empanimacion='33333333C' where codigo='PAR';
+
+---------------------------------------------------------
+update habitacion set superficie=18,piso=1 where numero=5;
+update habitacion set superficie=18,piso=1 where numero=6;
+insert into habitacion values(8,'S',26,7);
+insert into habitacion values(9,'S',32,7);
+----------------------------------------------------
+insert into EMPLEADO values ('77777777S','Marta Sánchez Alberola','Bazán 2','Elche','649155324',NULL);
+insert into EMPLEADO values ('88888888S','Roberto Miralles Ros','Castaños 7','Alcoy','677753543','Fisioterapia');
+insert into EMPLEADO values ('99999999S','Roberto Escobar García','Hacienda 27','Altea','676889054',NULL);
+insert into EMPSERVICIOS values('77777777S');
+insert into EMPSERVICIOS values('88888888S');
+insert into EMPSERVICIOS values('99999999S');
+------------------------------------------------
+insert into TRATAMIENTO values('MAS01','Masaje de espalda', 25);
+insert into TRATAMIENTO values('MAS02','Masaje de piernas', 20);
+insert into TRATAMIENTO values('PEL01','Corte de pelo corto', 20);
+insert into TRATAMIENTO values('PEL02','Corte de pelo largo', 25);
+insert into TRATAMIENTO values('PED01','Pedicura', 30);
+insert into TRATAMIENTO values('FAC01', 'Limpieza de cutis',25);
+insert into TRATAMIENTO values('DEP01','Depilación de cejas', 10);
+------------------------------------------------
+insert into REALIZAR values('MAS01','77777777S');
+insert into REALIZAR values('MAS02','77777777S');
+insert into REALIZAR values('DEP01','77777777S');
+insert into REALIZAR values('FAC01','77777777S');
+insert into REALIZAR values('MAS01','88888888S');
+insert into REALIZAR values('PED01','88888888S');
+insert into REALIZAR values('DEP01','88888888S');
+insert into REALIZAR values('MAS01','99999999S');
+insert into REALIZAR values('PEL01','99999999S');
+insert into REALIZAR values('PEL02','99999999S');
+insert into REALIZAR values('MAS02','99999999S');
+------------------------------------------------
+insert into CITA values('15/11/2012',1,'77777777S','21446688A','MAS01');
+insert into CITA values('15/11/2012',2,'77777777S','21446688A','DEP01');
+insert into CITA values('15/11/2012',2,'88888888S','45113377M','DEP01');
+insert into CITA values('15/11/2012',4,'77777777S','45113377M','MAS01');
+insert into CITA values('18/11/2012',1,'77777777S','45113377M','MAS01');
+insert into CITA values('18/11/2012',3,'77777777S','21668899P','FAC01');
+insert into CITA values('18/11/2012',2,'99999999S','21668899P','MAS02');
+
+------------------------------
+
+insert into AGENCIAVIAJES values ('A12345698','Agencia vacaciones ideales','965001213');
+insert into AGENCIAVIAJES values ('B12345678','Viaja a tu aire','676111111');
+insert into AGENCIAVIAJES values ('C12345678','Viajes y sueños','968345678');
+insert into AGENCIAVIAJES values ('E33545678','Viaja a tu aire','976111111');
+
+
+insert into EMPLEADO values ('53111111S','Elena Sala Sanchez','Calle 27','Alicante','676889055','Turismo');
+insert into EMPLEADO values ('53111112S','Mario Bernabeu Perez','Calle 17','Elda','656889055','Turismo');
+insert into EMPLEADO values ('54111112S','Mariana Llorca Lopez','Calle 45','Elche','656869055','Turismo');
+insert into EMPLEADO values ('64111112S','Adolfo Llorca Moreno','Calle 56','Elche','856869055','Hosteleria');
+
+insert into EMPRECEPCION values('53111111S');
+insert into EMPRECEPCION values('53111112S');
+insert into EMPRECEPCION values('54111112S');
+insert into EMPRECEPCION values('64111112S');
+
+insert into RESAGENCIA values(3,'A12345698','64111112S');
+insert into RESAGENCIA values(4,'A12345698','54111112S');
+insert into RESAGENCIA values(5,'C12345678','64111112S');
+insert into RESAGENCIA values(2,'A12345698','53111111S');
+
+insert into RESERVA values(11,'45987688P');
+insert into RESAGENCIA values(11,'A12345698','53111111S');
+
+insert into calendario values('12/07/2020', 'ALTA', '55555555D',NULL);
+insert into CALENDRESERVAS values(3,'12/07/2020','SI',11,'PC');
+
+
+INSERT INTO CALENDARIO VALUES ('10/10/12','BAJA','44444444D',NULL);
+INSERT INTO CALENDRESERVAS VALUES (1,'10/10/12','NO',1,'MP');
+
+
+insert into CALENDARIO values ('13/01/20','BAJA','44444444D',NULL);
+insert into CALENDARIO values ('13/08/20','ALTA','44444444D',NULL);
+insert into CALENDARIO values ('13/09/20','MEDIA','44444444D',NULL);
+
+
+insert into cita values ('19/11/12',2,'99999999S','21668899P','MAS02');
+update habitacion set piso=2 where numero=7;
+
+--create table CLIENTES_ALICANTINOS (
+--nif char(9) constraint cp_clientesAlicantinos primary key,
+--nombre varchar2(40),
+--telefono  char(11));
+
+insert into EMPLEADO values ('89111112S','Carlos Martinez Botella','Calle 58','Alicante','963458679',null);
+
+insert into EMPRECEPCION values('89111112S');
+
+insert into RESAGENCIA values(7,'A12345698','89111112S');
+
+insert into RESERVA values (8, 'X21778800');
+insert into RESERVA values (9, '21668899P');
+insert into RESERVA values (10, '21123456Z');
+
+insert into RESINTERNET values (8, 000001);
+insert into RESINTERNET values (9, 000001);
+insert into RESINTERNET values (10, 000001);
+
+
+alter table cliente add fecha_nac date;
+alter table calendreservas add observaciones varchar(25);
+
+
+
+
+-------------------------------
+
+
+commit;
+
+--procedimiento escribir
+create or replace procedure escribir(auxcad in varchar2) is
+begin
+dbms_output.put_line(auxcad);
+end;
+
+

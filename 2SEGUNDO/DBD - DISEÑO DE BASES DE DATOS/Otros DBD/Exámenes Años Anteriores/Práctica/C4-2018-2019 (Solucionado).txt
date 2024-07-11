@@ -1,0 +1,74 @@
+create or replace function ejercicio1(pmatricula autocaravana.matricula%type, pfecha date) return varchar2
+is
+aux number(1);
+begin
+select 1 into aux from autocaravana where matricula=pmatricula;
+select count(*)into aux from alquiler where autocaravana=pmatricula and pfecha>= desde and pfecha<=hasta;
+if aux=0 then return('N');
+else return('S');
+end if;
+exception
+when no_data_found then escribir('No existe matricula');
+return null;
+end;
+------------------------------------------------------------------------------
+create or replace procedure ejercicio2(pmarca modelo.marca%type)
+is
+cursor modelos is select nombre,pais_fabrica from modelo where marca=pmarca;
+aux modelo.nombre%type;
+cursor autocaravanas is select matricula,fecmatriculacion from autocaravana where modelo=aux;
+no_modelo exception;
+no_auto exception;
+total number(4);
+auxmin  number(5,2);
+auxmax  number(5,2);
+auxmedia number(5,2);
+
+begin 
+select count(*) into total from modelo where marca=pmarca;
+if total=0 then raise no_modelo; end if;
+select count(*) into total from modelo, autocaravana where nombre=modelo and marca=pmarca;
+if total=0 then raise no_auto; end if;
+for regc1 in modelos loop
+select max(precio_baja), min(precio_baja), avg(precio_baja) into auxmin, auxmax, auxmedia 
+from autocaravana where modelo=regc1.nombre;
+update modelo set precio_medio_dia=auxmedia where nombre=regc1.nombre;
+escribir(regc1.nombre||'  '||regc1.pais_fabrica||'  '||auxmax||'  '||auxmin);
+aux:=regc1.nombre;
+for regc2 in autocaravanas loop
+select count(distinct cliente) into total from alquiler where autocaravana=regc2.matricula;
+escribir('    '||regc2.matricula||'   '||regc2.fecmatriculacion||'  '||total);
+end loop;
+end loop;
+
+exception
+when no_modelo then escribir('No hay modelos de la marca');
+when no_auto then escribir('No hay autocaravanas de la marca');
+end;
+---------------------------------------------------------------
+
+create or replace trigger ejercicio3
+before insert on alquiler
+for each row
+declare
+aux_temporada temporada1.temporada%type;
+aux_alta autocaravana.precio_alta%type;
+aux_media autocaravana.precio_alta%type;
+aux_baja autocaravana.precio_alta%type;
+begin
+if :new.precio_diario is null then
+select temporada into aux_temporada from temporada1 where fecha=:new.desde;
+select precio_alta, precio_media, precio_baja into aux_alta, aux_media, aux_baja
+from autocaravana where matricula=:new.autocaravana;
+
+if aux_temporada='ALTA' then :new.precio_diario:=aux_alta;
+elsif aux_temporada='MEDIA' then :new.precio_diario:=aux_media; else :new.precio_diario:=aux_baja; 
+end if;
+
+else
+select precio_alta into aux_alta from autocaravana where matricula=:new.autocaravana;
+if aux_alta<:new.precio_diario then raise_application_error(-20601,'El precio no puede ser mayor que '||aux_alta);
+end if;
+update cliente1 set puntos=puntos+0.25*(:new.hasta-:new.desde) where nif=:new.cliente;
+end if;
+end;

@@ -1,0 +1,273 @@
+#lang racket
+(require rackunit)
+(require graphics/turtles)
+
+;;;;;;;;;;;;;;;
+; Ejercicio 1 ;
+;;;;;;;;;;;;;;;
+
+;;;;;;
+; a) ;
+;;;;;;
+
+(define (concat-iter lista-cadenas res)
+  (if (null? lista-cadenas)
+      res
+      (concat-iter (cdr lista-cadenas) (string-append res (car lista-cadenas)))))
+
+(check-equal? (concat-iter '("hola" "y" "adiós") "") "holayadiós")
+
+(define (concat lista-cadenas)
+  (concat-iter lista-cadenas ""))
+
+(check-equal? (concat  '("hola" "y" "adiós")) "holayadiós")
+
+;;;;;;
+; b) ;
+;;;;;;
+
+
+(define (min-max-pareja dato pareja)
+  (cons (min dato (car pareja))
+        (max dato (cdr pareja))))
+
+(check-equal? (min-max-pareja 3 '(10 . 20)) '(3 . 20))
+(check-equal? (min-max-pareja 30 '(10 . 20)) '(10 . 30))
+(check-equal? (min-max-pareja 15 '(10 . 20)) '(10 . 20))
+
+
+(define (min-max-iter lista res)
+  (if (null? lista)
+      res
+      (min-max-iter (cdr lista)
+                    (min-max-pareja (car lista) res))))
+
+(define (min-max lista)
+  (min-max-iter (cdr lista) (cons (car lista) (car lista))))
+
+(check-equal? (min-max '(2 5 9 12 5 0 4)) '(0 . 12))
+
+
+;;;;;;;;;;;;;;;
+; Ejercicio 2 ;
+;;;;;;;;;;;;;;;
+
+;;;;;;
+; a) ;
+;;;;;;
+
+(define (expande-pareja-iter pareja res)
+  (if (= 0 (cdr pareja))
+      res
+      (expande-pareja-iter (cons (car pareja)
+                                 (- (cdr pareja) 1))
+                           (cons (car pareja) res))))
+
+(define (expande-pareja pareja)
+  (expande-pareja-iter pareja '()))
+
+(check-equal? (expande-pareja (cons 'a 4)) '(a a a a))
+
+(define (expande-parejas-iter lista-parejas res)
+  (if (null? lista-parejas)
+      res
+      (expande-parejas-iter (cdr lista-parejas)
+                            (append res (expande-pareja (car lista-parejas))))))
+
+(define (expande-parejas . lista-parejas)
+  (expande-parejas-iter lista-parejas '()))
+
+(check-equal? (expande-parejas '(#t . 3) '("LPP" . 2) '(b . 4)) '(#t #t #t "LPP" "LPP" b b b b))
+
+;;;;;;
+; b) ;
+;;;;;;
+
+(define (rotar n lista)
+  (if (= n 0)
+      lista
+      (rotar (- n 1) (append (cdr lista) (list (car lista))))))
+
+(check-equal? (rotar 4 '(a b c d e f g)) '(e f g a b c d))
+
+
+;;;;;;;;;;;;;;;
+; Ejercicio 3 ;
+;;;;;;;;;;;;;;;
+
+;;;;;;
+; a) ;
+;;;;;;
+
+(define (mi-foldl funcion resultado lista)
+  (if (null? lista)
+      resultado
+      (mi-foldl funcion (funcion (car lista) resultado) (cdr lista))))
+
+(check-equal? (mi-foldl string-append "****" '("hola" "que" "tal")) "talquehola****")
+(check-equal? (mi-foldl cons '() '(1 2 3 4)) '(4 3 2 1))
+
+;;;;;;
+; b) ;
+;;;;;;
+
+(define (prefijo-lista? lista1 lista2)
+  (or (null? lista1)
+      (and (equal? (car lista1) (car lista2))
+           (prefijo-lista? (cdr lista1) (cdr lista2)))))
+
+(check-true (prefijo-lista? '(a b c) '(a b c d e)))
+(check-false (prefijo-lista? '(b c) '(a b c d e)))
+
+
+;;;;;;;;;;;;;;;
+; Ejercicio 4 ;
+;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;
+; diccionario ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define (crea-diccionario)               ;
+  (mcons '*diccionario* '()))            ;
+                                         ;
+(define (busca key dic)                  ;
+  (cond                                  ;
+    ((null? dic) #f)                     ;
+    ((equal? key (mcar (mcar dic)))      ;
+     (mcar dic))                         ;
+    (else (busca key (mcdr dic)))))      ;
+                                         ;
+(define (get key dic)                    ;
+  (define record (busca key (mcdr dic))) ;
+  (if (not record)                       ;
+      #f                                 ;
+      (mcdr record)))                    ;
+                                         ;
+(define (put key value dic)              ;
+  (define record (busca key (mcdr dic))) ;
+  (if (not record)                       ;
+      (set-mcdr! dic                     ;
+                (mcons (mcons key value) ;
+                      (mcdr dic)))       ;
+      (set-mcdr! record value))          ;
+  value)                                 ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define (pascal-memo fil col dic)
+  (cond ((= col 0) 1)
+         ((= col fil) 1)
+         ((not (equal? (get (cons fil col) dic) #f)) (get (cons fil col) dic))
+         (else (put (cons fil col) (+ (pascal-memo (- fil 1) (- col 1) dic)
+                                      (pascal-memo (- fil 1) col dic)) dic))))
+
+(define diccionario (crea-diccionario))
+(check-equal? (pascal-memo 8 4 diccionario) 70)
+(check-equal? (pascal-memo 40 20 diccionario) 137846528820)
+
+
+;;;;;;;;;;;;;;;
+; Ejercicio 5 ;
+;;;;;;;;;;;;;;;
+
+;;;;;;
+; a) ;
+;;;;;;
+
+(define (koch nivel trazo)
+  (if (= 0 nivel)
+      (draw trazo)
+      (begin
+        (koch (- nivel 1) (/ trazo 3))
+        (turn 60)
+        (koch (- nivel 1) (/ trazo 3))
+        (turn -120)
+        (koch (- nivel 1) (/ trazo 3))
+        (turn 60)
+        (koch (- nivel 1) (/ trazo 3)))))
+
+(define (koch-ventana nivel trazo)
+  (turtles #t)
+  (clear)
+  (turn 180)
+  (move (/ trazo 2))
+  (turn 180)
+  (koch nivel trazo))
+
+(koch-ventana  1 600)
+(koch-ventana  2 600)
+(koch-ventana  3 600)
+
+;;;;;;
+; b) ;
+;;;;;;
+
+(define (copo-nieve nivel trazo)
+  (begin
+    (koch nivel trazo)
+    (turn -120)
+    (koch nivel trazo)
+    (turn -120)
+    (koch nivel trazo)))
+
+(define (copo-nieve-ventana nivel trazo)
+  (turtles #t)
+  (clear)
+  (turn 120)
+  (move (/ trazo 3))
+  (turn 60)
+  (move (/ trazo 3))
+  (turn 180)
+  (copo-nieve nivel trazo))
+
+(copo-nieve-ventana 1 200)
+(copo-nieve-ventana 2 200)
+(copo-nieve-ventana 3 200)
+
+
+;;;;;;;;;;;;;;;
+; Ejercicio 6 ;
+;;;;;;;;;;;;;;;
+
+(define (dibuja-cuadrado w)
+  (begin
+    (draw w)
+    (turn 90)
+    (draw w)
+    (turn 90)
+    (draw w)
+    (turn 90)
+    (draw w)
+    (turn 90)))
+
+(define (alfombra-sierpinski w)
+    (if (> w 20)
+        (begin
+          (alfombra-sierpinski (/ w 3))
+          (move (/ w 3))
+          (alfombra-sierpinski (/ w 3))
+          (move (/ w 3))
+          (alfombra-sierpinski (/ w 3))
+          (turn 90)(move (/ w 3))(turn -90)
+          (alfombra-sierpinski (/ w 3))
+          (turn 90)(move (/ w 3))(turn -90)
+          (alfombra-sierpinski (/ w 3))
+          (turn 180)(move(/ w 3))(turn -180)
+          (alfombra-sierpinski (/ w 3))
+          (turn 180)(move(/ w 3))(turn -180)
+          (alfombra-sierpinski (/ w 3))
+          (turn -90) (move (/ w 3)) (turn 90)
+          (alfombra-sierpinski (/ w 3))
+          (turn -90) (move (/ w 3)) (turn 90)) ;; volvemos a la posición original
+        (dibuja-cuadrado w)))
+
+(define (alfombra-sierpinski-ventana w)
+  (turtles #t)
+  (clear)
+  (turn -90)
+  (move (/ w 2))
+  (turn -90)
+  (move (/ w 2))
+  (turn 180)
+  (alfombra-sierpinski w))
+
+(alfombra-sierpinski-ventana 600)

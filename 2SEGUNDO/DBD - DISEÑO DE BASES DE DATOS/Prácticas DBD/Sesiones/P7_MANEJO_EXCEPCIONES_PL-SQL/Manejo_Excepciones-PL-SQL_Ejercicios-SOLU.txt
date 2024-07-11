@@ -1,0 +1,101 @@
+
+-- RECUERDA HABER EJECUTADO SET SERVEROUTPUT ON
+
+-- ejercicio 1
+
+DECLARE
+auxCategoria habitacion.categoria%type;
+BEGIN
+	select categoria into auxCategoria from habitacion where numero=20;
+	Dbms_output.put_line('La categoría para la habitación 20 es: '|| auxCategoria);
+EXCEPTION
+	when no_data_found then 
+  		Dbms_output.put_line('La habitación 20 no se ha encontrado en la base de datos. Se ha procedido a darla de alta.');
+  		INSERT INTO habitacion (numero,categoria) VALUES(20,'I');
+END;
+
+--ejercicio 2
+
+DECLARE
+numSuites number(3):=0;
+nohaySuites exception;
+mas3suites exception;
+BEGIN
+	select count(*)into numSuites from habitacion where categoria='S';
+	if numSuites=0 then
+		raise nohaySuites;
+	else
+		if numSuites > 3 then
+			raise mas3suites;
+        end if;
+	END IF;
+EXCEPTION
+	when nohaySuites then 
+  		Dbms_output.put_line('El hotel no dispone actualmente de habitaciones de ese tipo.');
+	when mas3suites then 
+  		Dbms_output.put_line('Realizar ofertas y publicidad de las suites.');
+END;
+
+-- ejercicio 3
+--la tabla MALCATEGORIA debe estar creada ya de la sesión de ejercicios de "Introducción a PL/SQL"
+CREATE TABLE MALCATEGORIA (
+num number(3) primary key, 
+dif number(4,2));
+
+--para este ejercicio es necesario utilizar bloques de código anidados para que se inserten en la tabla MALCATEGORÍA
+-- todas las habitaciones que no cumplan lo especificado y no sólo el primer registro almacenado en el cursor (que es
+-- lo que sucedería si no hubiéramos usado los bloques anidados y hubiéramos puesto la sección EXCEPTION al final.
+create or replace procedure verificarDimension is
+auxNumero habitacion.numero%type;
+superfIncorrecta categoria.supMin%type;
+CURSOR c1 IS SELECT numero, superficie, supMin FROM habitacion, categoria  WHERE categoria=nombre;
+dimIncorrecta exception;
+BEGIN
+FOR regc1 IN c1 LOOP
+BEGIN
+IF regc1.superficie < regc1.supMin THEN
+	auxNumero:=regc1.numero;
+	superfIncorrecta:=regc1.supMin-regc1.superficie;
+	raise dimIncorrecta;
+ELSE
+  Dbms_output.put_line('Habitación '|| regc1.numero ||' dimensión correcta');
+END IF;
+EXCEPTION
+	when dimIncorrecta then 
+ 		Dbms_output.put_line('Habitación '|| auxNumero ||' dimensión INCORRECTA ***');
+  		INSERT INTO MALCATEGORIA VALUES(auxNumero,superfIncorrecta);
+END;
+END LOOP;
+END;
+
+-- ejercicio 4
+
+DECLARE
+auxNumero habitacion.numero%type;
+hab100metros number(3):=0;
+superfIncorrecta categoria.supMin%type;
+CURSOR c1 IS SELECT numero, superficie, supMin FROM habitacion, categoria  WHERE categoria=nombre;
+dimIncorrecta exception;
+BEGIN
+--comprobamos si hay habitaciones de 100 metros cuadrados de superficie
+select numero into hab100metros from habitacion where superficie=100;
+
+FOR regc1 IN c1 LOOP
+IF regc1.superficie < regc1.supMin THEN
+	auxNumero:=regc1.numero;
+	superfIncorrecta:=regc1.supMin-regc1.superficie;
+	raise dimIncorrecta;
+ELSE
+  Dbms_output.put_line('Habitación '|| regc1.numero ||' dimensión correcta');
+END IF;
+END LOOP;
+EXCEPTION
+	when no_data_found then
+        Dbms_output.put_line('No hay habitaciones de 100 metros cuadrados.');
+    when too_many_rows then
+        Dbms_output.put_line('Sí que hay habitaciones de 100 metros cuadrados');
+    when dimIncorrecta then 
+  		Dbms_output.put_line('Habitación '|| auxNumero ||' dimensión INCORRECTA ***');
+  		INSERT INTO MALCATEGORIA VALUES(auxNumero,superfIncorrecta);
+END;
+

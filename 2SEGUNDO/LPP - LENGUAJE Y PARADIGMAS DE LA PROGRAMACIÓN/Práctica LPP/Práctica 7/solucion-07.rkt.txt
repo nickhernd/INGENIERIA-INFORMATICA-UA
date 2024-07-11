@@ -1,0 +1,499 @@
+#lang racket
+(require rackunit)
+
+;--------------------------------------;
+; Implementación FOS exist? y for-all? ;
+;--------------------------------------;
+
+(define (exists? predicado lista)
+  (and (not (null? lista))
+       (or (predicado (car lista))
+           (exists? predicado (cdr lista)))))
+
+(define (for-all? predicado lista)
+  (or (null? lista)
+      (and (predicado (car lista))
+           (for-all? predicado (cdr lista)))))
+
+;---------------------------------------;
+; Barrera de abstracción arbol genérico ;
+;---------------------------------------;
+
+(define (dato-arbol arbol) 
+    (car arbol))
+
+(define (hijos-arbol arbol) 
+    (cdr arbol))
+
+(define (hoja-arbol? arbol) 
+   (null? (hijos-arbol arbol)))
+
+(define (nuevo-arbol dato lista-arboles)
+   (cons dato lista-arboles))
+
+;--------------------------------------;
+; Barrera de abstracción arbol binario ;
+;--------------------------------------;
+
+(define (dato-arbolb arbol)
+   (car arbol))
+
+(define (hijo-izq-arbolb arbol)
+   (cadr arbol))
+
+(define (hijo-der-arbolb arbol)
+   (caddr arbol))
+
+(define arbolb-vacio '())
+
+(define (vacio-arbolb? arbol)
+   (equal? arbol arbolb-vacio))
+
+(define (hoja-arbolb? arbol)
+   (and (vacio-arbolb? (hijo-izq-arbolb arbol))
+        (vacio-arbolb? (hijo-der-arbolb arbol))))
+
+(define (nuevo-arbolb dato hijo-izq hijo-der)
+    (list dato hijo-izq hijo-der))
+
+
+;------------;
+; Ejerccio 1 ;
+;------------;
+
+;------;
+; a.1) ;
+;------;
+
+(define arbol '(15 (4 (2)
+                      (3))
+                   (8 (6))
+                   (12 (9)
+                       (10)
+                       (11))))
+(check-equal? (dato-arbol (cadr (hijos-arbol (caddr (hijos-arbol arbol))))) 10)
+
+;------;
+; a.2) ;
+;------;
+
+; 1. (suma-datos-arbol (car bosque))  ->   9
+; 2. (suma-datos-bosque (cdr bosque)  ->  56 (14+42)
+;                                      + ---
+; (suma-datos-bosque (hijos-arbol arbol)) 65
+
+;Comprobación:
+
+(define (suma-datos-arbol arbol)
+    (+ (dato-arbol arbol)
+       (suma-datos-bosque (hijos-arbol arbol))))
+
+(define (suma-datos-bosque bosque)
+    (if (null? bosque)
+        0
+        (+ (suma-datos-arbol (car bosque)) 
+           (suma-datos-bosque (cdr bosque)))))
+
+(check-equal? (suma-datos-bosque (hijos-arbol arbol)) 65)
+(check-equal? (suma-datos-arbol (car (hijos-arbol arbol))) 9)
+(check-equal? (suma-datos-bosque (cdr (hijos-arbol arbol))) 56)
+(check-equal? (suma-datos-arbol (cadr (hijos-arbol arbol))) 14)
+(check-equal? (suma-datos-arbol (caddr (hijos-arbol arbol))) 42)
+
+;------;
+; a.3) ;
+;------;
+
+; 1. (map suma-datos-arbol-fos (hijos-arbol arbol)) -> (9 14 42)
+; 2. (+ 42 15) -> 57
+;    (+ 14 57) -> 71
+;    (+  9 71) -> 80
+;
+;Comprobación:
+
+(define (suma-datos-arbol-fos arbol)
+   (foldr + (dato-arbol arbol) 
+          (map suma-datos-arbol-fos (hijos-arbol arbol))))
+
+(check-equal? (map suma-datos-arbol-fos (hijos-arbol arbol)) '(9 14 42))
+
+(check-equal? (foldr + (dato-arbol arbol)      '(42))             (+ 42 15))
+(check-equal? (foldr + (dato-arbol arbol)   '(14 42))       (+ 14 (+ 42 15)))
+(check-equal? (foldr + (dato-arbol arbol) '(9 14 42)) (+  9 (+ 14 (+ 42 15))))
+
+;------;
+; b.1) ;
+;------;
+
+(define arbolb '(40 (23 (5 () ())
+                        (32 (29 () ())
+                                ()))
+                    (45 ()
+                        (56 () ()))))
+(check-equal? (dato-arbol (hijo-izq-arbolb (hijo-der-arbolb (hijo-izq-arbolb arbolb)))) 29)
+
+
+;-------------;
+; Ejercicio 2 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+(define (to-string-arbol arbol)
+  (string-append (symbol->string (dato-arbol arbol))
+                 (to-string-bosque (hijos-arbol arbol))))
+
+(define (to-string-bosque bosque)
+  (if (null? bosque)
+      ""
+      (string-append (to-string-arbol (car bosque))
+                     (to-string-bosque (cdr bosque)))))
+
+(define arbol2.1 '(a (b (c (d))
+                        (e))
+                     (f)))
+(check-equal? (to-string-arbol arbol2.1) "abcdef")
+
+(define (to-string-arbol-fos arbol)
+  (foldr string-append ""
+         (cons (symbol->string (dato-arbol arbol))
+               (map to-string-arbol-fos (hijos-arbol arbol)))))
+
+(check-equal? (to-string-arbol-fos arbol2.1) "abcdef")
+
+;----;
+; b) ;
+;----;
+
+(define (veces-arbol dato arbol)
+  (+ (if (equal? dato (dato-arbol arbol)) 1 0)
+         (veces-bosque dato (hijos-arbol arbol))))
+
+(define (veces-bosque dato bosque)
+  (if (null? bosque)
+      0
+      (+ (veces-arbol dato (car bosque))
+         (veces-bosque dato (cdr bosque)))))
+
+(define arbol2.2 '(a (b (c)
+                        (d))
+                     (b (b)
+                        (f))))
+(check-equal? (veces-arbol 'b arbol2.2) 3)
+(check-equal? (veces-arbol 'g arbol2.2) 0)
+
+(define (veces-arbol-fos dato arbol)
+  (foldr + (if (equal? dato (dato-arbol arbol)) 1 0)
+         (map (lambda (subarbol)
+                (veces-arbol-fos dato subarbol))
+              (hijos-arbol arbol))))
+
+(check-equal? (veces-arbol-fos 'b arbol2.2) 3)
+(check-equal? (veces-arbol-fos 'g arbol2.2) 0)
+
+
+;-------------;
+; Ejercicio 3 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+(define (hojas-cumplen pred arbol)
+  (if (and (hoja-arbol? arbol)
+           (pred (dato-arbol arbol)))
+      (list (dato-arbol arbol))
+      (hojas-cumplen-bosque pred (hijos-arbol arbol))))
+
+(define (hojas-cumplen-bosque pred bosque)
+  (if (null? bosque)
+      '()
+      (append (hojas-cumplen pred (car bosque))
+              (hojas-cumplen-bosque pred (cdr bosque)))))
+  
+(define arbol3.1 '(10 (2)
+                      (12 (4)
+                          (2))
+                      (10 (5))))
+(define arbol3.2 '(10 (2)
+                      (12 (4)
+                          (2))
+                      (10 (6))))
+(check-equal? (hojas-cumplen even? arbol3.1) '(2 4 2))
+(check-equal? (hojas-cumplen even? arbol3.2) '(2 4 2 6))
+
+; Suponemos que el árbol que se pasa como parámetro
+; no es un árbol hoja
+(define (hojas-cumplen-fos pred arbol)
+  (foldr append
+         '()
+         (map (lambda (subarbol)
+                (if (hoja-arbol? subarbol)
+                    (if (pred (dato-arbol subarbol))
+                        (list (dato-arbol subarbol))
+                        '())
+                    (hojas-cumplen-fos pred subarbol)))
+              (hijos-arbol arbol))))
+
+; Alternativa (aplicable a un árbol hoja) en la que se saca la comparación de
+; si es hoja fuera de la expresión lambda
+(define (hojas-cumplen-fos2 pred arbol)
+  (if (and (hoja-arbol? arbol)
+           (pred (dato-arbol arbol)))
+      (list (dato-arbol arbol))
+      (foldr append
+             '()
+             (map (lambda (subarbol)
+                    (hojas-cumplen-fos2 pred subarbol))
+                  (hijos-arbol arbol)))))
+
+(check-equal? (hojas-cumplen-fos2 even? '(2)) '(2))
+
+(check-equal? (hojas-cumplen-fos even? arbol3.1) '(2 4 2))
+(check-equal? (hojas-cumplen-fos even? arbol3.2) '(2 4 2 6))
+
+;----;
+; b) ;
+;----;
+
+(define (todas-hojas-cumplen? pred arbol)
+  (if (hoja-arbol? arbol)
+      (pred (dato-arbol arbol))
+      (todas-hojas-cumplen-bosque? pred (hijos-arbol arbol))))
+
+(define (todas-hojas-cumplen-bosque? pred bosque)
+  (or (null? bosque)
+      (and (todas-hojas-cumplen? pred (car bosque))
+           (todas-hojas-cumplen-bosque? pred (cdr bosque)))))
+
+(check-false (todas-hojas-cumplen? even? arbol3.1))
+(check-true (todas-hojas-cumplen? even? arbol3.2))
+
+; Suponemos que el árbol que se pasa como parámetro
+; no es un árbol hoja
+
+(define (todas-hojas-cumplen-fos? pred arbol)
+  (for-all? (lambda (subarbol)
+             (if (hoja-arbol? subarbol)
+                 (pred (dato-arbol subarbol))
+                 (todas-hojas-cumplen-fos? pred subarbol))) (hijos-arbol arbol)))
+
+(check-false (todas-hojas-cumplen-fos? even? arbol3.1))
+(check-true (todas-hojas-cumplen-fos? even? arbol3.2))
+
+; Alternativa (aplicable a un árbol hoja) en la que se saca la comparación de
+; si es hoja fuera de la expresión lambda
+(define (todas-hojas-cumplen-fos2? pred arbol)
+  (if (hoja-arbol? arbol)
+      (pred (dato-arbol arbol))
+      (for-all? (lambda (subarbol)
+                  (todas-hojas-cumplen-fos2? pred subarbol))
+                (hijos-arbol arbol))))
+
+(check-false (todas-hojas-cumplen-fos2? even? '(3)))
+(check-true (todas-hojas-cumplen-fos2? even? '(2)))
+
+;-------------;
+; Ejercicio 4 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+(define (suma-raices-hijos arbol)
+  (foldr + 0 (map dato-arbol (hijos-arbol arbol))))
+
+(define arbol4.1 '(20 (2)
+                      (8 (4)
+                         (2))
+                      (9 (5))))
+(check-equal? (suma-raices-hijos arbol4.1) 19)
+(check-equal? (suma-raices-hijos (cadr (hijos-arbol arbol4.1))) 6)
+
+;----;
+; b) ;
+;----;
+
+(define (raices-mayores-arbol? arbol)
+  (and (> (dato-arbol arbol) (suma-raices-hijos arbol))
+       (raices-mayores-bosque? (hijos-arbol arbol))))
+
+(define (raices-mayores-bosque? bosque)
+  (or (null? bosque)
+      (and (raices-mayores-arbol? (car bosque))
+           (raices-mayores-bosque? (cdr bosque)))))
+
+(check-true (raices-mayores-arbol? arbol4.1))
+(define arbol4.2 '(20 (2)
+                      (8 (4)
+                         (5))
+                      (9 (5))))
+(check-false (raices-mayores-arbol? arbol4.2))
+
+; Solución 1 (usando for-all?)
+(define (raices-mayores-arbol-fos? arbol)
+  (and (> (dato-arbol arbol) (suma-raices-hijos arbol))
+       (for-all? raices-mayores-arbol-fos? (hijos-arbol arbol))))
+
+(check-true (raices-mayores-arbol-fos? arbol4.1))
+(check-false (raices-mayores-arbol-fos? arbol4.2))
+
+; Solución 2 (usando foldl)
+(define (raices-mayores-arbol-fos2? arbol)
+  (foldl (lambda (subarbol resultado)
+           (and resultado
+                (raices-mayores-arbol-fos2? subarbol)))
+         (> (dato-arbol arbol) (suma-raices-hijos arbol))
+         (hijos-arbol arbol)))
+
+(check-true (raices-mayores-arbol-fos2? arbol4.1))
+(check-false (raices-mayores-arbol-fos2? arbol4.2))
+
+(define arbol4.3 '(25 (2)
+                   (10 (4)
+                       (5 (6)))
+                   (9 (5))))
+
+(check-false (raices-mayores-arbol? arbol4.3))
+
+;----;
+; c) ;
+;----;
+
+(define (comprueba-raices-arbol arbol)
+  (nuevo-arbol (if (> (dato-arbol arbol) (suma-raices-hijos arbol))
+                   1
+                   0)
+               (comprueba-raices-bosque (hijos-arbol arbol))))
+
+(define (comprueba-raices-bosque bosque)
+  (if (null? bosque)
+      '()
+      (cons (comprueba-raices-arbol (car bosque))
+            (comprueba-raices-bosque (cdr bosque)))))
+
+;Alternativa FOS:
+;(define (comprueba-raices-arbol arbol)
+;  (nuevo-arbol (if (> (dato-arbol arbol) (suma-raices-hijos arbol))
+;                   1
+;                   0)
+;               (map comprueba-raices-arbol (hijos-arbol arbol))))
+
+(check-equal? (comprueba-raices-arbol arbol4.1) '(1 (1)
+                                                    (1 (1) (1))
+                                                    (1 (1))))
+(check-equal? (comprueba-raices-arbol arbol4.2) '(1 (1)
+                                                    (0 (1) (1))
+                                                    (1 (1))))
+
+
+;-------------;
+; Ejercicio 5 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+; Suponemos que lista tiene al menos un elemento
+(define (es-camino? lista arbol)
+  (and (equal? (car lista) (dato-arbol arbol))
+       (es-camino-bosque? (cdr lista) (hijos-arbol arbol))))
+
+(define (es-camino-bosque? lista bosque)
+  (cond
+    ((and (null? bosque) (null? lista)) #t)
+    ((or (null? bosque) (null? lista)) #f)
+    (else (or (es-camino? lista (car bosque))
+              (es-camino-bosque? lista (cdr bosque))))))
+
+; Alternativa con expresiones lógicas:
+;(define (es-camino-bosque? lista bosque)
+;  (or (and (null? lista) (null? bosque))
+;      (and (not (null? lista))
+;           (not (null? bosque))
+;           (or (es-camino? lista (car bosque))
+;               (es-camino-bosque? lista (cdr bosque))))))
+
+; Alternativa FOS:
+;(define (es-camino? lista arbol)
+;  (and (equal? (car lista) (dato-arbol arbol))
+;       (or (and (null? (cdr lista)) (hoja-arbol? arbol))
+;           (exists? (lambda (subarbol)
+;                      (es-camino? (cdr lista) subarbol))
+;                    (hijos-arbol arbol)))))
+
+(define arbol5.1 '(a (a (a)
+                        (b))
+                     (b (a)
+                        (c))
+                     (c)))
+(check-true (es-camino? '(a b a) arbol5.1))
+(check-false (es-camino? '(a b) arbol5.1))
+(check-false (es-camino? '(a b a b) arbol5.1))
+
+;----;
+; b) ;
+;----;
+
+(define (nodos-nivel nivel arbol)
+  (if (= nivel 0)
+      (list (dato-arbol arbol))
+      (nodos-nivel-bosque (- nivel 1) (hijos-arbol arbol))))
+
+(define (nodos-nivel-bosque nivel bosque)
+  (if (null? bosque)
+      '()
+      (append (nodos-nivel nivel (car bosque))
+              (nodos-nivel-bosque nivel (cdr bosque)))))
+
+;Alternativa FOS:
+;(define (nodos-nivel nivel arbol)
+;  (if (= nivel 0)
+;      (list (dato-arbol arbol))
+;      (foldl (lambda (subarbol lista)
+;               (append lista (nodos-nivel (- nivel 1) subarbol)))
+;             '()
+;             (hijos-arbol arbol))))
+
+(define arbol5.2 '(1 (2 (3 (4)
+                           (2))
+                        (5))
+                     (6 (7))))
+(check-equal? (nodos-nivel 0 arbol5.2) '(1))
+(check-equal? (nodos-nivel 1 arbol5.2) '(2 6))
+(check-equal? (nodos-nivel 2 arbol5.2) '(3 5 7))
+(check-equal? (nodos-nivel 3 arbol5.2) '(4 2))
+(check-equal? (nodos-nivel 4 arbol5.2) '())
+
+
+;-------------;
+; Ejercicio 6 ;
+;-------------;
+
+(define (camino-arbolb arbolb camino)
+  (cond ((or (null? camino) (vacio-arbolb? arbolb))
+         '())
+        ((equal? (car camino) '<)
+         (camino-arbolb (hijo-izq-arbolb arbolb) (cdr camino)))
+        ((equal? (car camino) '>)
+         (camino-arbolb (hijo-der-arbolb arbolb) (cdr camino)))
+        (else
+         (cons (dato-arbolb arbolb)
+               (camino-arbolb arbolb (cdr camino))))))
+
+(define arbolb6 '(9 (5 (3 (1 () ())
+                          (4 () ()))
+                       (7 () ()))
+                    (15 (13 (10 () ())
+                            (14 () ()))
+                        (20 ()
+                            (23 () ())))))
+(check-equal? (camino-arbolb arbolb6 '(= < < = > =)) '(9 3 4))
+(check-equal? (camino-arbolb arbolb6 '(> = < < =)) '(15 10))
+                       
+  

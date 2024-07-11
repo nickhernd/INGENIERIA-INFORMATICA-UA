@@ -1,0 +1,42 @@
+﻿insert into ACTIVIDAD values ('FUT', 'Campeonato de Futbol');
+insert into ACTIVIDAD values ('AJE', 'Torneo de Ajedrez');
+insert into ACTIVIDAD values ('PET', 'Torneo de Petanca');
+insert into ACTIVIDAD values ('BAI', 'Baile de Salon');
+insert into ACTIVIDAD values ('PAR', 'Torneo de Parchis');
+insert into ACTIVIDAD values ('SEND', 'Senderismo');
+insert into ACTIVIDAD values ('GOLF', 'Iniciacion al Golf');
+insert into ACTIVIDAD values ('PING', 'Campeonato de Ping Pong');
+
+insert into ACTADULTOS values ('AJE');
+insert into ACTADULTOS values ('PET');
+insert into ACTADULTOS values ('BAI');
+insert into ACTADULTOS values ('PAR');
+insert into ACTADULTOS values ('SEND');
+insert into ACTADULTOS values ('GOLF');
+insert into ACTADULTOS values ('FUT');
+
+insert into SUSTADULTOS values ('AJE', 'PAR');
+insert into SUSTADULTOS values ('PET', 'PAR');
+insert into SUSTADULTOS values ('BAI', 'PAR');
+insert into SUSTADULTOS values ('SEND', 'GOLF');
+insert into SUSTADULTOS values ('SEND', 'BAI');
+insert into SUSTADULTOS values ('FUT', 'BAI');
+insert into SUSTADULTOS values ('GOLF', 'BAI');
+
+
+insert into EMPLEADO values ('21455588A','Alicia Martínez Escolano','Rueda 25','Alicante','686112233','Administrativo');
+insert into EMPLEADO values ('22222222B','Alberto Manresa Ruiz','Molinos 32','Calpe','656543201','Administrativo');
+insert into EMPLEADO values ('33333333C','Mario Campos Rojo','Huertas grandes 27','Altea','686768999','Curso de animador social');
+insert into EMPLEADO values ('44444444D','Maria López Sánchez','Almirante 27','Alicante','649172324',NULL);
+insert into EMPLEADO values ('55555555D','Raul León Escobar','Hacienda 27','Altea','966756543',NULL);
+insert into EMPLEADO values ('66666666D','Roberto Escobar García','Hacienda 27','Altea','966756543',NULL);
+
+
+insert into CLIENTE values ('21446688A','Almudena Urquijo Martínez','686756743','San Martín de Valdeiglesias', 'Madrid', 'España');
+insert into CLIENTE values ('45113377M','Javier Robledo Cañizares','656769903','Denia', 'Alicante', 'España');
+insert into CLIENTE values ('21123456Z','Sara Pérez Caballero','656769903','Vinaroz', 'Castellón', 'España');
+insert into CLIENTE values ('21778899P','Pablo Álvarez Redondo','646577816','San Juan', 'Alicante', 'España');
+insert into CLIENTE values ('45987688P','Pedro Bernabeu Ramos','577151586','Alicante', 'Alicante', 'España');
+insert into CLIENTE values ('21668899P','Nicolás Álvarez Redondo','646577816','Elche', 'Alicante', 'España');
+insert into CLIENTE values ('X21778800','Natalia Ramos Rico','656487502','Roma', 'Roma', 'Italia');
+

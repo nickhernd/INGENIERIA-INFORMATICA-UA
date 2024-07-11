@@ -1,0 +1,75 @@
+-- script para crear la BD y datos 
+
+--drop table PARQUE_ESPECIAL;
+--drop table PUBLICAR;
+--drop table PARQUE;
+--drop table REVISTA;
+--drop table EDITORIAL;
+
+create table PARQUE (
+codigo varchar(6) constraint pk_naturalPARQ primary key, 
+nombre varchar2(100) UNIQUE,
+area number(6),
+tempMax number(4,2),
+tempMin number(4,2),
+comentarios varchar2(200));
+
+create table EDITORIAL(
+CIF varchar(9) constraint pk_EDITORIAL primary key,
+nombre varchar2(100),
+web varchar(50));
+
+create table REVISTA(
+issn varchar(9) constraint pk_REVISTA primary key,
+nombre varchar2(100) UNIQUE,
+descripcion varchar2(200),
+idioma varchar2(20),
+periodicidad number(2),
+editorial varchar(9) constraint fk_REVISTA_EDITORIAL references EDITORIAL);
+
+create table PUBLICAR(
+parqueID varchar(6) constraint fk_publicar_naturalPARQ references PARQUE,
+ISSNREVISTA varchar(9) constraint fk_publicar_REVISTA references REVISTA,
+constraint pk_appear primary key(parqueID, ISSNREVISTA));
+
+create table PARQUE_ESPECIAL(
+codigo varchar(6) primary key,
+nombre varchar2(100),
+area number(6));
+
+insert into PARQUE values('PARQ01','FONT ROJA',2298,40.5,-10.5, 'diversidad flora y fauna');
+insert into PARQUE values('PARQG1','ALBUFERA',21120,38,3, 'mediterraneo');
+insert into PARQUE values('PARQ02','ILLES COLUMBRETES',4019,42.4,1, 'mediterraneo');
+insert into PARQUE values('PARQ03','MONTGO',2500,42.6,3, 'mediterraneo');
+insert into PARQUE values('PARQG2','SERRA ESPADA',31000,40,-11.3, 'diversidad flora y fauna');
+insert into PARQUE values('PARQ04','SIERRA ESPUNYA',5000,45,5,null);
+
+INSERT INTO EDITORIAL VALUES('A11111111','Parques naturales','www.parcsnaturals.es');
+INSERT INTO EDITORIAL VALUES('B22222222','springer','www.springer.com');
+INSERT INTO EDITORIAL VALUES('C33333333','elsevier','www.elsevier.es');
+INSERT INTO EDITORIAL VALUES('D44444444','Willey','www.willey.es');
+INSERT INTO EDITORIAL VALUES('E55555555','Conserjeria de medio ambiente','www.gva.es');
+
+INSERT INTO REVISTA VALUES('1111-1111','Grandes parques naturales',null,'español',2,'A11111111');
+INSERT INTO REVISTA VALUES('2222-1111','National geographic',null,'Ingles',12,'B22222222');
+INSERT INTO REVISTA VALUES('3333-1111','Parques nacionales','revista de la asociacion de parques','ingles',6,'B22222222');
+INSERT INTO REVISTA VALUES('4444-1111','Parques naturales de la Comunidad Valenciana','quarterly REVISTA','español',4,'A11111111');
+INSERT INTO REVISTA VALUES('5555-1111','Natural life','less than 3 issues per year','ingles',3,'D44444444');
+INSERT INTO REVISTA VALUES('6666-1111','National parks magazine','jcr REVISTA','ingles',6, 'D44444444');
+INSERT INTO REVISTA VALUES('7777-1111','Nationale parc revue','jcr REVISTA','frances',6,'C33333333');
+INSERT INTO REVISTA VALUES('8888-1111','Important world natural parks','jcr REVISTA','ingles',2,'D44444444');
+
+INSERT INTO PUBLICAR VALUES('PARQ01','1111-1111');
+INSERT INTO PUBLICAR VALUES('PARQ02','6666-1111');
+INSERT INTO PUBLICAR VALUES('PARQ03','4444-1111');
+INSERT INTO PUBLICAR VALUES('PARQ03','1111-1111');
+INSERT INTO PUBLICAR VALUES('PARQG1','5555-1111');
+INSERT INTO PUBLICAR VALUES('PARQ04','6666-1111');
+
+commit;
+
+create or replace procedure escribir(auxcad in varchar2) is
+begin
+ dbms_output.enable;
+ dbms_output.put_line(auxcad);
+end;

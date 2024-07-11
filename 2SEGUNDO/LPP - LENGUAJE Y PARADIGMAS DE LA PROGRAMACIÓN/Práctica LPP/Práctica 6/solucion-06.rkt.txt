@@ -1,0 +1,254 @@
+#lang racket
+(require rackunit)
+
+(define (for-all? predicado lista)
+  (or (null? lista)
+      (and (predicado (car lista))
+           (for-all? predicado (cdr lista)))))
+
+(define (hoja? elem)
+  (not (list? elem)))
+
+
+;------------;
+; Ejerccio 1 ;
+;------------;
+
+;----;
+; a) ;
+;----;
+
+(define lista-a '((a b) d (c (e) (f g) h)))
+;En estos ejemplos se usa una llamada a función por cada nivel (por cada lista):
+(check-equal? (car (car lista-a)) 'a)
+(check-equal? (cadr (car lista-a)) 'b)
+(check-equal? (car (caddr lista-a)) 'c)
+(check-equal? (cadr lista-a) 'd)
+(check-equal? (car (cadr (caddr lista-a))) 'e)
+(check-equal? (car (caddr (caddr lista-a))) 'f)
+(check-equal? (cadr (caddr (caddr lista-a))) 'g)
+(check-equal? (cadddr (caddr lista-a)) 'h)
+
+;----;
+; b) ;
+;----;
+
+(define lista-b1 '((2 (3)) (4 2) ((2) 3)))
+;         *
+;      /  |  \
+;    /    |    \
+;   *     *     *
+;  / \   / \   / \
+; 2   * 4   2 *   3 
+;     |       |
+;     3       2
+
+(define lista-b2 '((b) (c (a)) d (a)))
+;      *
+;    /| \\
+;   * * d *
+;  / /|   |
+; b c *   a
+;     |
+;     a
+
+;----;
+; c) ;
+;----;
+
+; 1) ((4 (9)) (16 4) ((4) 9))
+; 2) 1 -> (cuadrado-estruct '(2 (3)))
+;    2 -> (cuadrado-estruct '((4 2) ((2) 3)))
+; 3) 1 -> (4 (9))
+;    2 ->  ((16 4) ((4) 9))
+
+;----;
+; d) ;
+;----;
+
+; (-1 2 -1 1)
+
+
+;-------------;
+; Ejercicio 2 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+(define (cuenta-pares elem)
+  (cond ((null? elem) 0)
+        ((hoja? elem) (if (even? elem) 1 0))
+        (else (+ (cuenta-pares (car elem))
+                 (cuenta-pares (cdr elem))))))
+
+(check-equal? (cuenta-pares '(1 (2 3) 4 (5 6))) 3)
+(check-equal? (cuenta-pares '(((1 2) 3 (4) 5) ((((6)))))) 3)
+
+(define (cuenta-pares-fos lista)
+  (foldr +
+         0
+         (map (lambda (elem)
+                (if (hoja? elem)
+                    (if (even? elem) 1 0)
+                    (cuenta-pares-fos elem))) lista)))
+
+(check-equal? (cuenta-pares-fos '(1 (2 3) 4 (5 6))) 3)
+(check-equal? (cuenta-pares-fos '(((1 2) 3 (4) 5) ((((6)))))) 3)
+
+
+;----;
+; b) ;
+;----;
+
+(define (todos-positivos elem)
+  (cond
+    ((null? elem) #t)
+    ((hoja? elem) (positive? elem))
+    (else (and (todos-positivos (car elem))
+               (todos-positivos (cdr elem))))))
+
+(check-false (todos-positivos '(1 (2 (3 (-3))) 4)))
+(check-true (todos-positivos '(1 (2 (3 (3))) 4)))
+
+(define (todos-positivos-fos lista)
+  (for-all? (lambda (elem)
+              (if (hoja? elem)
+                  (positive? elem)
+                  (todos-positivos-fos elem))) lista))
+
+(check-false (todos-positivos-fos '(1 (2 (3 (-3))) 4)))
+(check-true (todos-positivos-fos '(1 (2 (3 (3))) 4)))
+
+
+;-------------;
+; Ejercicio 3 ;
+;-------------;
+
+(define (cumplen-predicado pred elem)
+  (cond ((null? elem) '())
+        ((hoja? elem)
+         (if (pred elem)
+             (list elem)
+             '()))
+        (else (append (cumplen-predicado pred (car elem))
+                      (cumplen-predicado pred (cdr elem))))))
+
+(check-equal? (cumplen-predicado even? '(1 (2 (3 (4))) (5 6))) '(2 4 6))
+(check-equal? (cumplen-predicado pair? '(((1 . 2) 3 (4 . 3) 5) 6)) '((1 . 2) (4 . 3)))
+
+(define (cumplen-predicado-fos pred lista)
+  (foldr append
+         '()
+         (map (lambda (elem)
+                (if (hoja? elem)
+                    (if (pred elem) (list elem) '())
+                    (cumplen-predicado-fos pred elem)))
+              lista)))
+
+(check-equal? (cumplen-predicado-fos even? '(1 (2 (3 (4))) (5 6))) '(2 4 6))
+(check-equal? (cumplen-predicado-fos pair? '(((1 . 2) 3 (4 . 3) 5) 6)) '((1 . 2) (4 . 3)))
+
+(define (busca-mayores n lista-num)
+  (cumplen-predicado (lambda (elem) (> elem n)) lista-num))
+
+(check-equal? (busca-mayores 10 '(-1 (20 (10 12) (30 (25 (15)))))) '(20 12 30 25 15))
+
+(define (empieza-por char lista-pal)
+  (cumplen-predicado (lambda (elem)
+                       (equal? char (string-ref (symbol->string elem) 0)))
+                     lista-pal))
+
+(check-equal? (empieza-por #\m
+                           '((hace (mucho tiempo)) (en) (una galaxia ((muy  muy) lejana))))
+              '(mucho muy muy))
+
+
+;-------------;
+; Ejercicio 4 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+(define (sustituye-elem elem-old elem-new elem)
+  (cond ((null? elem) '())
+        ((hoja? elem)
+         (if (equal? elem-old elem)
+             elem-new
+             elem))
+        (else (cons (sustituye-elem elem-old elem-new (car elem))
+                    (sustituye-elem elem-old elem-new (cdr elem))))))
+
+(check-equal? (sustituye-elem 'c  'h '(a b (c d (e c)) c (f (c) g))) '(a b (h d (e h)) h (f (h) g)))
+
+;----;
+; b) ;
+;----;
+
+(define (diff-listas l1 l2)
+  (cond ((null? l1) '())
+        ((hoja? l1)
+         (if (equal? l1 l2)
+             '()
+             (list (cons l1 l2))))
+        (else (append (diff-listas (car l1) (car l2))
+                      (diff-listas (cdr l1) (cdr l2))))))
+
+(check-equal? (diff-listas '(a (b ((c)) d e) f) '(1 (b ((2)) 3 4) f)) '((a . 1) (c . 2) (d . 3) (e . 4)))
+(check-equal? (diff-listas '((a b) c) '((a b) c)) '())
+
+
+;-------------;
+; Ejercicio 5 ;
+;-------------;
+
+;----;
+; a) ;
+;----;
+
+(define (mezclar lista1 lista2 n)
+  (cond ((null? lista1) '())
+        ((hoja? lista1) (if (< n 0) lista2 lista1))
+        (else (cons (mezclar (car lista1) (car lista2) (- n 1))
+                    (mezclar (cdr lista1) (cdr lista2) n)))))
+
+(define lista1 '(((a b) ((c))) (d) e))
+(define lista2 '(((1 2) ((3))) (4) 5))
+(check-equal? (mezclar lista1 lista2 2) '(((1 2) ((3))) (d) e))
+
+;----;
+; b) ;
+;----;
+
+(define (incrementa-nivel pareja)
+  (cons (car pareja) (+ (cdr pareja) 1)))
+
+(define (mas-profundo pareja1 pareja2)
+  (if (or (null? pareja2)
+          (> (cdr pareja1) (cdr pareja2)))
+      pareja1
+      pareja2))
+
+(define (nivel-elemento elem)
+  (cond 
+    ((null? elem) '())
+    ((hoja? elem) (cons elem 0))
+    (else (mas-profundo
+           (incrementa-nivel (nivel-elemento (car elem)))
+           (nivel-elemento (cdr elem))))))
+
+;Versión con FOS
+;(define (nivel-elemento lista)
+;  (incrementa-nivel (foldr mas-profundo
+;                           '()
+;                           (map (lambda (elem)
+;                                  (if (hoja? elem)
+;                                      (cons elem 0)
+;                                      (nivel-elemento elem)))
+;                                lista))))
+
+(check-equal? (nivel-elemento '(2 (3))) '(3 . 2))
+(check-equal? (nivel-elemento '((2) (3 (4)((((((5))) 6)) 7)) 8)) '(5 . 8))

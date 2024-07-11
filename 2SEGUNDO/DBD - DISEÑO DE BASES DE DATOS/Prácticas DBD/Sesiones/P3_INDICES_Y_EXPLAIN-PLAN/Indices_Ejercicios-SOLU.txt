@@ -1,0 +1,94 @@
+-- Soluciones ejercicios Indices-Transacciones
+
+--Trabajando con índices
+
+--1 
+
+CREATE TABLE TRATAMIENTO(
+codigo char(5) constraint pk_tratamiento primary key,
+observaciones varchar2(50),
+precio number(3) not null);
+
+
+--2
+insert into TRATAMIENTO values('MAS01','Masaje de espalda', 25);
+insert into TRATAMIENTO values('MAS02','Masaje de piernas', 20);
+insert into TRATAMIENTO values('PEL01','Corte de pelo corto', 20);
+insert into TRATAMIENTO values('PEL02','Corte de pelo largo', 25);
+insert into TRATAMIENTO values('PED01','Pedicura', 30);
+insert into TRATAMIENTO values('FAC01', 'Limpieza de cutis',25);
+insert into TRATAMIENTO values('DEP01','Depilación de cejas', 10);
+insert into TRATAMIENTO values('TR01','facial perlas', 60);
+insert into TRATAMIENTO values('TR02','facial oro', 100);
+insert into TRATAMIENTO values('TR03','peeling facial', 55);
+insert into TRATAMIENTO values('TR04','peeling corporal', 70);
+insert into TRATAMIENTO values('TR05','facial de-stress', 80);
+
+--3
+create table TRATAMIENTO_CARO(
+codigo char(5), 
+precio number(3),
+constraint pkTratamientoCaro primary key (codigo));
+
+--4
+insert into TRATAMIENTO_CARO (select codigo, precio from tratamiento where precio > 20);
+
+--5
+
+explain plan 
+set statement_id='trat1'
+for insert into TRATAMIENTO_CARO (select codigo, precio from tratamiento where precio > 20);
+
+select operation, options, object_name, position
+from plan_table
+where statement_id='trat1';
+
+RESULTADO:
+TABLE ACCESS FULL (a la tabla TRATAMIENTO)
+
+--6
+select * from tratamiento where precio > 50;
+Tiempo de ejecución de la select: tarea terminada en 0,631 segundos
+
+-- también se podría haber probado haciendo select de la tabla tratamiento_caro.
+
+--7
+
+explain plan 
+set statement_id='tratEsp'
+for select * from tratamiento where precio > 50;
+
+select operation, options, object_name, position
+from plan_table
+where statement_id='tratEsp';
+
+RESULTADO:
+TABLE ACCESS FULL (tabla TRATAMIENTO)
+
+-- también se podría haber probado haciendo select de la tabla tratamiento_caro.
+
+--8
+create index idx_precioTratamiento on tratamiento (precio);
+
+explain plan 
+set statement_id='tratEsp1'
+for select * from tratamiento where precio > 50;
+
+select operation, options, object_name, position
+from plan_table
+where statement_id='tratEsp1';
+
+No se obtiene el mismo plan de ejecución. Ahora al tener el índice definido sobre
+la columna precio, el acceso a los datos se realiza utilizando el índice definido.
+RESULTADO:
+TABLE ACCESS BY INDEX ROWID BATCHED (tabla TRATAMIENTO)
+INDEX RANGE SCAN (índice IDX_PRECIOTRATAMIENTO)
+
+--comprueba si sucede lo mismo si el índice se define sobre la columna precio de la tabla tratamiento_caro.
+
+--9
+select * from tratamiento where precio > 50;
+
+Tiempo de ejecución de la select: tarea terminada0,081 segundos. Si comparamos este tiempo de respuesta con el tiempo de respuesta del ejercicio 5, vemos que ha habido una mejora y cuando se utiliza el índice el acceso es más rápido.
+
+

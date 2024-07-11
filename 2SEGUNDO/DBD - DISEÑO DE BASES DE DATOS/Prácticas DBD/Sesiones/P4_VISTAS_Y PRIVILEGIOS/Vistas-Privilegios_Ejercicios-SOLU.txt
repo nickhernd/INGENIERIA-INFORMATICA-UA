@@ -1,0 +1,254 @@
+--Solución ejercicios VISTAS_Y_PRIVILEGIOS
+
+-- Ejercicios repaso CREATE 
+
+-- Ejercicio 1
+
+create table ACTIVIDAD (
+código char(4) constraint pk_actividad primary key,
+ descripcion varchar2(100) not null);
+
+create table Actninos(
+actividad char(4) constraint pk_actninos primary key 
+constraint fk_actninos_actividad references actividad);
+
+create table ActADULTOS(
+actividad char(4) constraint pk_actadultos primary key 
+constraint fk_actadultos_actividad references actividad);
+
+create table ActTODOS(
+actividad char(4) constraint pk_acttodos primary key 
+constraint fk_acttodos_actividad references actividad);
+
+create table sustninos(
+activ1 char(4) constraint fk_sustninos_actni1 references actninos,
+activ2 char(4) constraint fk_sustninos_actni2 references actninos,
+constraint pk_sustninos primary key(activ1, activ2)); 
+
+create table sustadultos(
+activ1 char(4) constraint fk_sustadultos_actad1 references actadultos,
+activ2 char(4) constraint fk_sustadultos_actad2 references actadultos,
+constraint pk_sustadultos primary key(activ1, activ2)); 
+
+create table susttodos(
+activ1 char(4) constraint fk_susttodos_acttodos1 references acttodos,
+activ2 char(4) constraint fk_susttodos_acttodos2 references acttodos,
+constraint pk_susttodos primary key(activ1, activ2)); 
+
+CREATE TABLE CLIENTE(
+nif char(9) constraint cp_cliente primary key,
+nombre varchar2(40) not null,
+telefono  char(11) not null,
+localidad varchar2(40),
+provincia varchar2(30),
+pais varchar2(30));
+
+CREATE TABLE EMPLEADO(
+nif char(9) constraint cp_empleado primary key,
+nombre varchar2(40),
+dirección varchar2(30),
+población varchar2(40),
+telefono char(11),
+estudios  varchar2(50));
+
+
+--Ejercicios sobre vistas
+
+-- ejercicio 1
+
+create view individuales
+as select numero 
+   from habitacion
+  where categoria='I';
+
+--ejercicio 2
+
+create view individuales_check
+as select numero 
+   from habitacion
+  where categoria='I'
+with check option;
+
+-- ejercicio 3
+
+create view individuales_cat
+as select numero, categoria
+   from habitacion
+  where categoria='I';
+
+
+-- ejercicio 4
+
+create view individuales_cat_check
+as select numero, categoria
+   from habitacion
+  where categoria='I'
+with check option;
+
+-- ejercicio 5
+
+insert into individuales values(100);
+
+--insert into individuales_check values(110)
+--violación de la cláusula WHERE, vista creada con WITH CHECK OPTION
+
+insert into individuales_cat values(120, 'S');
+
+-- insert into individuales_cat_check values(130, 'S')
+--violación de la cláusula WHERE, vista creada con WITH CHECK OPTION
+
+insert into individuales_cat_check values(140, 'I');
+
+-- ejercicio 6
+
+create view dobles_check
+as select numero 
+   from habitacion
+  where categoria='D'
+with check option;
+
+insert into dobles_check values(150);
+-- la diferencia está en que la categoría de la habitación tiene definida 
+--como valor por defecto D, por lo que al no introducir valor en la categoría 
+--le pone D y cumple la condición de la vista.
+-- En el ejercicio 5.b como le ponía D como valor (no había valor para categoria y
+-- se usaba el valor por defecto) no coincidía con la condición de 
+-- la vista (categoria='I').
+
+
+-- ejercicio 7
+create view clientes_alicante
+as select nombre, telefono, localidad
+   from cliente
+   where provincia='Alicante';
+
+-- Si el empleo de mayúsculas o minúsculas en los datos no tiene un significado distinto
+-- por ejemplo, si como valor de un código, poner CPAA 
+-- es lo mismo que CPaa o CPaA (no son 3 códigos distintos),
+-- para despreocuparnos si los datos se han introducido con mayúsculas o minusculas
+-- podemos apoyarnos en la función UPPER.
+ 
+create clientes_alicante2
+as select nombre, telefono, localidad
+   from cliente
+   where UPPER(provincia)='ALICANTE';
+
+-- Puedes comprobar que estas dos sentencias devuelven lo mismo:
+
+SELECT * FROM clientes_alicante;
+SELECT * FROM clientes_alicante2;
+
+
+-- insert into clientes_alicante values('Rodrigo López','Alcoy','646565444');
+
+-- la inserción se realizaría sobre la tabla clientes si hubiésemos indicado el valor para la columna nif,
+-- sin embargo, al no haber introducido el nif al definir la vista,
+--  no se puede dar valor al NIF, y no se puede quedar a NULL
+-- por se la clave primaria.
+
+-- ejercicio 8
+
+create view clientes_alicante_nif
+as select nif, nombre, localidad, telefono
+   from cliente
+   where UPPER(provincia)='ALICANTE';
+
+insert into clientes_alicante_nif values('99999999Z','Rodrigo López','Alcoy','646565444');
+
+--insert into clientes_alicante_nif values('21668899P','Miguel Bermejo','Villena','646555555');
+-- ya existe un cliente con ese NIF y no se puede repetir la clave primria.
+
+
+-- ejercicio 9
+
+-- si queréis que el nombre de columna código pase a ser codigo
+-- sin tilde.
+alter table actividad rename column código to codigo;
+
+
+--con esta solución sólo devolveremos resultados de actividades para aquellas que tengan actividad sustituta
+create view contadorsustituciones
+as select codigo, descripcion,'ADULTO' tipo, count(*) total
+   from actividad, sustadultos
+   where codigo=activ1
+   group by codigo, descripcion
+   union
+   select codigo, descripcion, 'NIÑOS' tipo, count(*) total
+   from actividad, sustninos
+   where codigo=activ1
+   group by codigo, descripcion
+   union
+   select codigo, descripcion, 'TODOS' tipo, count(*) total
+   from actividad, susttodos
+   where codigo=activ1
+   group by codigo, descripcion;
+
+--solución alternativa (en esta solución devolvemos todas las actividades categorizadas y un contador que indica las actividades equivalentes (de 0 a n)): 
+create or replace view CONTADOR_SUSTITUCIONES  as
+select codigo,'Adultos' as tipo,descripcion,count(activ2) as contador from actividad inner join actadultos on codigo=actividad left join sustadultos on actividad=activ1
+group by codigo,descripcion
+union
+select codigo,'Niños' as tipo,descripcion,count(activ2) as contador from actividad inner join actninos on codigo=actividad left join sustninos on actividad=activ1
+group by codigo,descripcion
+union
+select codigo,'Todos' as tipo,descripcion,count(activ2) as contador from actividad inner join acttodos on codigo=actividad left join susttodos on actividad=activ1
+group by codigo,descripcion;
+
+
+--insert:
+insert into contadorsustituciones values('PAC','Paseo a caballo','ADULTOS',5);
+-- la operación de inserción no se permite. 
+-- Error que empieza en la línea: 5 del comando -
+--insert into CONTADOR_SUSTITUCIONES values('PAC','ADULTOS','Paseo a caballo',5)
+--Error en la línea de comandos : 5 Columna : 13
+--Informe de error -
+--Error SQL: ORA-01732: operación de manipulación de datos no válida en esta vista
+--01732. 00000 -  "data manipulation operation not legal on this view"
+
+-- no nos deja insertar porque uno de los campos de la vista se ha obtenido a través de una función de agregado a partir de información agrupada
+--mas información en: http://www.dba-oracle.com/t_ora_01732_data_manipulation_operation.htm
+   
+-- Comprendiendo el funcionamiento de GRANT y REVOKE
+
+1) abrir dos sesiones de SQL Developer:
+Sesión 1:
+usuario: dbd_XXXX / pass: dbd
+Sesión 2: 
+usuario: dbd1_XXXX / pass: dbd
+
+2) 
+Usuario habitual (otorgante) --> dbd_XXXX
+Usuario nuevo (receptor) --> dbd1_XXXX
+
+3) ejecutar desde la sesión 2:
+SELECT * from empleado	(no existe la tabla)
+
+4) ejecutar desde la sesión 2:
+SELECT * from dbd_XXXX.empleado  	(no existe la tabla)
+
+5) En la sesión 1, ejecutamos:
+Grant select on empleado to dbd1_XXXX;
+
+6) desde la sesión 2, ejecutamos
+SELECT * from empleado	(no existe la tabla)
+SELECT * from dbd_XXXX.empleado  --> si hemos asignado bien los permisos en el ejercicio 5, esta select ahora sí que devuelve todas las filas de la tabla empleado
+
+7) Desde la sesión 2, ejecutamos:
+insert into empleado values ('00000007A','CARLOS RUIZ','calle ESTRELLA 35','POLOP');
+No permite la inserción.
+Tampoco la permitirá si hacemos:
+insert into dbd_XXXX.empleado values ('00000007A','CARLOS RUIZ','calle ESTRELLA 35','POLOP');
+
+8) Desde la sesión 1, ejecutamos:
+Grant insert on empleado to dbd1_XXXX;
+
+9) Desde la sesión 2, ejecutamos:
+insert into dbd_XXXX.empleado values ('00000007A','CARLOS RUIZ','calle ESTRELLA 35','POLOP');
+
+10) Desde la sesión 1, ejecutamos:
+revoke insert on empleado from dbd1_XXXX;
+
+11) Desde la sesión 2, ejecutamos:
+insert into dbd_XXXX.empleado values ('00000008B','ROSA GUARDIOLA','calle LUCERO 47','SAN JUAN');
+
+No permite la inserción, puesto que le hemos quitado este permiso, al usuario dbd1_XXXX.

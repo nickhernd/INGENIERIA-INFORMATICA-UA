@@ -1,0 +1,263 @@
+#lang racket
+(require rackunit)
+
+;--------------;
+; Ejercicio 1: ;
+;--------------;
+
+;------;
+; a.1) ;
+;------;
+
+(define (menor a b)
+  (if (< a b) a b))
+
+(define (minimo lista)
+  (if (null? (cdr lista))
+      (car lista)
+      (menor (car lista) (minimo (cdr lista)))))
+
+(check-equal? (minimo '(1 8 6 4 3)) 1)
+(check-equal? (minimo '(1 -1 3 -6 4)) -6)
+
+;------;
+; a.2) ;
+;------;
+; ¿Qué lista se pasa como parámetro a la primera llamada recursiva a la función?
+; (8 6 4 3)
+; ¿Qué devuelve esa llamada recursiva?
+; 3
+; ¿Con qué argumentos se llama a la función menor que devuelve el resultado final?
+; (menor 1 3)
+
+;----;
+; b) ;
+;----;
+
+(define (concatena lista-chars)
+  (if (null? lista-chars)
+      ""
+      (string-append (string (car lista-chars))
+                     (concatena (cdr lista-chars)))))
+
+(check-equal? (concatena '(#\H #\o #\l #\a)) "Hola")
+(check-equal? (concatena '(#\S #\c #\h #\e #\m #\e #\space #\m #\o #\l #\a)) "Scheme mola")
+
+;----;
+; c) ;
+;----;
+
+(define (contiene-lista? lista dato)
+  (if (null? lista)
+      #f
+      (or (equal? (car lista) dato)
+          (contiene-lista? (cdr lista) dato))))
+
+(check-false (contiene-lista? '() 'algo))
+(check-true (contiene-lista? '("algo" 3 #\A) 3) )
+(check-false (contiene-lista? '("algo" 3 #\A) 'algo))
+
+(define (contiene? cadena char)
+  (contiene-lista? (string->list cadena) char))
+
+(check-true (contiene? "Hola" #\o))
+(check-true (contiene? "Esto es una frase" #\space))
+(check-false (contiene? "Hola" #\h))
+
+;--------------;
+; Ejercicio 2: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (binario-a-decimal lista-bits)
+  (if (null? lista-bits)
+      0
+      (+ (* (car lista-bits)
+            (expt 2 (- (length lista-bits) 1)))
+         (binario-a-decimal (cdr lista-bits)))))
+
+(check-equal? (binario-a-decimal '(1 1 1 1)) 15)
+(check-equal? (binario-a-decimal '(1 1 0)) 6)
+(check-equal? (binario-a-decimal '(1 0)) 2)
+
+;----;
+; b) ;
+;----;
+
+(define (ordenada-creciente? lista-nums)
+  (or (null? (cdr lista-nums))
+      (and (< (car lista-nums)
+              (cadr lista-nums))
+           (ordenada-creciente? (cdr lista-nums)))))
+
+(check-true (ordenada-creciente? '(-1 23 45 59 99)))
+(check-false (ordenada-creciente? '(12 50 -1 293 1000)))
+(check-true (ordenada-creciente? '(3)))
+
+;--------------;
+; Ejercicio 2: ;
+;--------------;
+
+;------;
+; a.1) ;
+;------;
+
+(define p1 (list (cons 1 2) (list 3 4)))
+
+(check-equal? p1 '((1 . 2) . ((3 . (4 . ())) . ())))
+
+;------;
+; a.2) ;
+;------;
+
+
+(check-equal? (cdar p1) 2)
+
+
+(check-equal? (cadadr p1) 4)
+
+;------;
+; b.1) ;
+;------;
+
+(define p2 (cons (list (cons 7 (cons 8 9)) (list 1 2) 3) (cons 10 11)))
+
+(check-equal? p2 '(((7 . (8 . 9)) . ((1 . (2 . ())) . (3 . ()))) . (10 . 11)))
+
+;------;
+; b.2) ;
+;------;
+
+(check-equal? (cddaar p2) 9)
+
+(check-equal? (cadadr (car p2)) 2)
+
+;--------------;
+; Ejercicio 4: ;
+;--------------;
+
+(define (obten-palo caracter)
+  (cond
+    ((equal? #\O caracter) 'Oros)
+    ((equal? #\C caracter) 'Copas)
+    ((equal? #\E caracter) 'Espadas)
+    (else 'Bastos)))
+
+(define (obten-valor caracter)
+  (cond
+    ((equal? #\A caracter) 1)  ; As
+    ((equal? #\S caracter) 10) ; Sota
+    ((equal? #\C caracter) 11) ; Caballo
+    ((equal? #\R caracter) 12) ; Rey
+    (else (- (char->integer caracter) (char->integer #\0)))))
+
+(define (cadena-a-par-caracteres cadena)
+  (cons (string-ref cadena 0)
+        (string-ref cadena 1)))
+
+(define (par-caracteres-a-carta pareja)
+  (cons (obten-valor (car pareja))
+        (obten-palo (cdr pareja))))
+
+(define (carta simbolo)
+  (par-caracteres-a-carta
+   (cadena-a-par-caracteres
+    (symbol->string simbolo))))
+
+(define cartas1 '(3O 5E AC 2B 5O 5C 4B))
+(define cartas2 '(CE AO 3B AC 2E SC 4C))
+
+(define (suma-valores cartas n)
+  (if (or (null? cartas) (= n 0))
+      0
+      (+ (car (carta (car cartas)))
+         (suma-valores (cdr cartas)
+                       (- n 1)))))
+
+(check-equal? (suma-valores cartas1 5) 16)
+(check-equal? (suma-valores cartas1 2) 8)
+(check-equal? (suma-valores cartas2 3) 15)
+(check-equal? (suma-valores cartas2 8) 32)
+
+(define (compara-sumas suma1 suma2)
+  (cond
+    ((and (> suma1 21) (> suma2 21)) -1)
+    ((> suma2 21) 1)
+    ((> suma1 21) 2)
+    ((> suma1 suma2) 1)
+    ((> suma2 suma1) 2)
+    (else 0)))
+
+(check-equal? (compara-sumas 15 10) 1)
+(check-equal? (compara-sumas 12 19) 2)
+(check-equal? (compara-sumas 23 13) 2)
+(check-equal? (compara-sumas 18 22) 1)
+(check-equal? (compara-sumas 24 24) -1)
+(check-equal? (compara-sumas 16 16) 0)
+
+(define (blackjack cartas1 n1 cartas2 n2)
+  (compara-sumas (suma-valores cartas1 n1)
+                 (suma-valores cartas2 n2)))
+
+(check-equal? (blackjack cartas1 5 cartas2 4) 0)
+(check-equal? (blackjack cartas1 5 cartas2 3) 1)
+(check-equal? (blackjack cartas1 3 cartas2 4) 2)
+(check-equal? (blackjack cartas1 7 cartas2 6) -1)
+
+
+;--------------;
+; Ejercicio 5: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (suma-izq pareja n)
+  (cons (+ (car pareja) n)
+        (cdr pareja)))
+
+(define (suma-der pareja n)
+  (cons (car pareja)
+        (+ (cdr pareja) n)))
+
+(check-equal? (suma-izq (cons 10 20) 3) '(13 . 20))
+(check-equal? (suma-der (cons 10 20) 5) '(10 . 25))
+
+;----;
+; b) ;
+;----;
+
+(define (suma-impares-pares lista-num)
+  (cond
+    ((null? lista-num)
+     (cons 0 0))
+    ((even? (car lista-num))
+     (suma-der (suma-impares-pares (cdr lista-num)) (car lista-num)))
+    (else
+     (suma-izq (suma-impares-pares (cdr lista-num)) (car lista-num)))))
+
+(check-equal? (suma-impares-pares '(3 2 1 4 8 7 6 5)) '(16 . 20))
+(check-equal? (suma-impares-pares '(3 1 5)) '(9 . 0))
+
+;;--------------;
+;; Ejercicio 6: ;
+;;--------------;
+
+(define (mejor-cadena pareja cadena)
+  (if (> (string-length cadena)
+         (cdr pareja))
+      (cons cadena (string-length cadena))
+      pareja))
+
+(define (cadena-mayor lista)
+  (if (null? lista)
+      (cons "" 0)
+      (mejor-cadena (cadena-mayor (cdr lista)) (car lista))))
+
+(check-equal? (cadena-mayor '("vamos" "a" "obtener" "la" "cadena" "mayor")) '("obtener" . 7))
+(check-equal? (cadena-mayor '("prueba" "con" "maximo" "igual")) '("maximo" . 6))
+(check-equal? (cadena-mayor '()) '("" . 0))

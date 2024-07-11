@@ -1,0 +1,125 @@
+-- Soluciones ejercicios Transacciones
+
+--Comprendiendo el funcionamiento de COMMIT, SAVEPOINT y ROLLBACK
+
+--1
+create table prueba1 (a number(2), b number(5), constraint pkPrueba1 primary key (a));
+create table prueba2 (a char(1), b number(4), constraint pkPrueba2 primary key (a));
+
+--2
+
+1) En la sesión 1 se insertan las filas y se muestra toda la información de la tabla prueba1, mientras que en la sesión 2, al ejecutar la select indicada no devuelve filas. MOTIVO: los cambios realizados en la sesión 1 por las transacciones ejecutadas (insert) aún no son visibles para la sesión 2, puesto que no se ha hecho el commit. Sin embargo, la tabla sí que existe en la sesión 2 puesto que al ejecutar la sentencia "create table" en Oracle, esta sentencia lleva un commit implícito.
+ 
+SESIÓN 1: 
+1 filas insertadas.
+1 filas insertadas.
+1 filas insertadas.
+         A          B
+---------- ----------
+         1       3400 
+         4       4100 
+         8       3700 
+
+SESIÓN 2:
+no se ha seleccionado ninguna fila
+		 
+2)Al confirmar los cambios en la sesión 1 (commit) ahora sí que desde la sesión 2, podemos ver la información de la tabla que se insertó desde la sesión 1.
+
+SESIÓN 1:
+confirmado.
+         A          B
+---------- ----------
+         1       3400 
+         4       4100 
+         8       3700 
+		 
+SESIÓN 2:
+         A          B
+---------- ----------
+         1       3400 
+         4       4100 
+         8       3700 
+
+3) En la sesión 1, no es posible insertar las filas('A',4),('B',4),('C',4), puesto que se duplicaría el valor para la clave primaria en la tabla prueba2. Y en la sesión 2 al consultar la tabla prueba2, vemos que no nos devuelve ninguna fila. En la sesión 1 no se han confirmado los cambios, aunque sí que hemos introducido un punto de control.
+
+SESIÓN 1:
+1 filas insertadas.
+1 filas insertadas.
+1 filas insertadas.
+savepoint punto1
+Error que empieza en la línea 8 del comando:
+insert into prueba2 values('A',4)
+Informe de error:
+Error SQL: ORA-00001: restricción única (ELLORET.PKPRUEBA2) violada
+00001. 00000 -  "unique constraint (%s.%s) violated"
+*Cause:    An UPDATE or INSERT statement attempted to insert a duplicate key.
+           For Trusted Oracle configured in DBMS MAC mode, you may see
+           this message if a duplicate entry exists at a different level.
+*Action:   Either remove the unique restriction or do not insert the key.
+Error que empieza en la línea 10 del comando:
+insert into prueba2 values('B',4)
+Informe de error:
+Error SQL: ORA-00001: restricción única (ELLORET.PKPRUEBA2) violada
+00001. 00000 -  "unique constraint (%s.%s) violated"
+*Cause:    An UPDATE or INSERT statement attempted to insert a duplicate key.
+           For Trusted Oracle configured in DBMS MAC mode, you may see
+           this message if a duplicate entry exists at a different level.
+*Action:   Either remove the unique restriction or do not insert the key.
+Error que empieza en la línea 12 del comando:
+insert into prueba2 values('C',4)
+Informe de error:
+Error SQL: ORA-00001: restricción única (ELLORET.PKPRUEBA2) violada
+00001. 00000 -  "unique constraint (%s.%s) violated"
+*Cause:    An UPDATE or INSERT statement attempted to insert a duplicate key.
+           For Trusted Oracle configured in DBMS MAC mode, you may see
+           this message if a duplicate entry exists at a different level.
+*Action:   Either remove the unique restriction or do not insert the key.
+1 filas insertadas.
+Error que empieza en la línea 16 del comando:
+insert into prueba2 values('A',8)
+Informe de error:
+Error SQL: ORA-00001: restricción única (ELLORET.PKPRUEBA2) violada
+00001. 00000 -  "unique constraint (%s.%s) violated"
+*Cause:    An UPDATE or INSERT statement attempted to insert a duplicate key.
+           For Trusted Oracle configured in DBMS MAC mode, you may see
+           this message if a duplicate entry exists at a different level.
+*Action:   Either remove the unique restriction or do not insert the key.
+A          B
+- ----------
+A          1 
+B          1 
+C          1 
+D          4 
+
+SESIÓN 2:
+no se ha seleccionado ninguna fila
+
+4) Aquí vemos cómo en la sesión 1, deshacemos los cambios hasta el punto de control definido y por tanto, al mostrar la información de la tabla, sólo obtenemos 3 filas (ya que la correspondiente a la tupla: (D, 4) se ha deshecho la operación de inserción. En la sesión 2, no vemos ningún fila de la tabla, pues no se han confirmado los cambios.
+
+SESIÓN 1:
+rollback terminado.
+A          B
+- ----------
+A          1 
+B          1 
+C          1 
+
+SESIÓN 2:
+no se ha seleccionado ninguna fila
+
+5) Al confirmar los cambios en la sesión 1, éstos ya son visibles y por tanto al consultar la tabla prueba2 desde la sesión 2, vemos las filas insertadas.
+
+SESIÓN 1: 
+confirmado.
+A          B
+- ----------
+A          1 
+B          1 
+C          1 
+
+SESIÓN 2: 
+A          B
+- ----------
+A          1 
+B          1 
+C          1 

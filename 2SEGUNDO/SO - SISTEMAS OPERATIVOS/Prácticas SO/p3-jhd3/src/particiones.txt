@@ -1,0 +1,15 @@
+1 [0 hueco 2000]
+[0 hueco 2000]
+
+2 [0 hueco 2000]
+[0 hueco 2000]
+
+3 [0 hueco 2000]
+[0 hueco 2000]
+
+4 [0 hueco 2000]
+[0 hueco 2000]
+
+5 [0 hueco 2000]
+[0 hueco 2000]
+

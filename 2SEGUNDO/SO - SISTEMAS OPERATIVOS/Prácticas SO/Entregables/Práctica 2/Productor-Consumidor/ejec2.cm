@@ -1,0 +1,111 @@
+//=============[CONSTANTES]================
+semaphore accesoBuffer=1, buffer=5, consumer=0;
+
+const int bufferSize = 5;
+const int shape = 1;
+const int color = 2;
+int objeto = 0;
+
+//===========[GRÁFICA Y MENSAJES]============
+void draw(){
+
+  //Coordenadas del objeto inicial
+  int x = 60, y = 200;
+  
+  //Creamos todos los objetos necesarios
+  for(objeto; objeto < bufferSize; objeto++){
+
+	create(objeto, shape, color, x, y, 45, 45);
+
+    //Lo pintamos en pantalla vacio
+	makevisible(objeto, 1);
+	//Entre ellos dejamos una separación
+	x = x + 100;
+  }
+  objeto = 0;
+
+  create(100, 3, 5, x-40 , y-100, 45, 45);
+  makevisible(100, 1);
+
+  create(300, 3, 5, x-40 , y+100, 45, 45);
+  makevisible(300, 1);
+
+}
+
+
+void add(){
+   
+   cout<<"Soy el productor y voy a agregar al buffer."<<endl;
+
+   //Imprimimos el objeto en la interfaz gráfica como producido
+   changecolor(objeto, 5);
+   objeto++;   
+   
+}
+
+void take(){
+
+   cout<<"Soy el consumidor y voy a coger del buffer"<<endl;
+   objeto--;
+
+   //Imprimimos el objeto en la interfaz gráfica como consumido
+   changecolor(objeto, 1);
+
+}
+
+//=============[CABECERAS]================
+void producir(){}
+
+void consumir(){}
+
+//=============[PRODUCTOR]================
+void productor(){ 
+
+    for(;;){
+      producir();
+
+      //Esperamos a que se agrege al buffer
+      changecolor(100, 1);
+      wait(buffer); 
+      changecolor(100, 5);
+
+      wait(accesoBuffer);
+      add();
+
+      //Esperamos a que se decremente el buffer
+      signal(accesoBuffer);
+      //Desbloqueamos al consumidor
+      signal(consumer); 
+    }
+}
+
+//=============[CONSUMIDOR]=================
+void consumidor(){
+
+    for(;;){
+      changecolor(300, 1);
+      wait(consumer); //Esperamos hasta que el productor acabe
+      changecolor(300, 5);
+	
+      wait(accesoBuffer); //Exclusion mutua
+      take();
+      signal(accesoBuffer);
+      signal(buffer);
+      consumir();
+    }
+}
+
+//=================[MAIN]===================
+void main(){
+
+   //initialsem(buffer, bufferSize);
+   //initialsem(accesoBuffer, 1); //Maximo 1 proceso accede
+   //initialsem(consumer, 0); //Para que el consumidor se bloquee hasta que el productor le desbloquee
+   draw();
+
+   cobegin
+   {
+      productor();
+      consumidor();
+   }
+}

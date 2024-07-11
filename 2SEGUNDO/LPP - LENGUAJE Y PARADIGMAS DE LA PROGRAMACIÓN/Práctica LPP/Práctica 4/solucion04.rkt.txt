@@ -1,0 +1,311 @@
+#lang racket
+(require rackunit)
+
+;--------------;
+; Ejercicio 1: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(check-equal? (map (lambda (x)
+                     (cond 
+                       ((symbol? x) (symbol->string x))
+                       ((number? x) (number->string x))
+                       ((boolean? x) (if x "#t" "#f"))
+                       (else "desconocido")))
+                   '(1 #t hola #f (1 . 2)))
+              '("1" "#t" "hola" "#f" "desconocido"))
+
+(check-equal? (filter (lambda (x) 
+                        (equal? (string-ref (symbol->string x) 1) #\a))
+                      '(alicante barcelona madrid almería))
+              '(barcelona madrid))
+
+(check-equal? (foldl (lambda (dato resultado)
+                       (string-append
+                        (symbol->string (car dato))
+                        (symbol->string (cdr dato))
+                        resultado)) "" '((a . b) (hola . adios) (una . pareja)))
+              "unaparejaholaadiosab")
+
+(check-equal? (foldr (lambda (dato resultado)
+                       (cons (+ (car resultado) dato)
+                             (+ (cdr resultado) 1))) '(0 . 0) '(1 1 2 2 3 3))
+              '(12 . 6))
+
+;----;
+; b) ;
+;----;
+
+(define lista '((2 . 7) (3 . 5) (10 . 4) (5 . 5)))
+
+(check-equal? (filter even?
+                      (map (lambda (x) (+ (car x)
+                                          (cdr x)))
+                           lista))
+              '(8 14 10))
+
+(check-equal? (filter (lambda (x) (> (car x) (cdr x)))
+                      (map (lambda (x) (cons (cdr x) (car x))) lista))
+              '((7 . 2) (5 . 3)))
+
+(check-equal? (foldr (lambda (d r) (cons (car d) r)) '()
+                     (filter (lambda (x) (even? (+ (car x) (cdr x)))) lista))
+              '(3 10 5))
+
+;----;
+; b) ;
+;----;
+
+(define (f1 x) (lambda (y z) (string-append y z x)))
+(define g1 (f1 "a"))
+(check-equal? (g1 "clase" "lpp") "claselppa")
+
+(define (f2 x) (lambda (y z) (list y x z)))
+(define g2 (f2 "lpp"))
+(check-equal? (g2 "hola""clase") (list "hola" "lpp" "clase"))
+
+(define (f g) (lambda(z x) (g z x)))
+(check-equal? ((f cons) 3 4) '(3 . 4))
+
+;--------------;
+; Ejercicio 2: ;
+;--------------;
+
+(define (crea-carta pareja)
+  (string->symbol (string (cdr pareja) (car pareja))))
+
+(define (crea-baraja lista-parejas)
+  (map crea-carta lista-parejas))
+
+(check-equal? (crea-baraja '((#\u2660 . #\A) (#\u2663 . #\2) 
+                             (#\u2665 . #\3) (#\u2666 . #\R)))
+              '(A♠ 2♣ 3♥ R♦))
+
+(define (expande-pareja pareja)
+  (if (= (cdr pareja) 0)
+      '()
+      (cons (car pareja)
+            (expande-pareja (cons (car pareja)
+                                  (- (cdr pareja) 1))))))
+
+(define (expande-lista lista-parejas)
+  (foldr append '() (map expande-pareja lista-parejas)))
+
+(check-equal? (expande-lista '((#t . 3) ("LPP" . 2) (b . 4)))
+              '(#t #t #t "LPP" "LPP" b b b b))
+
+
+;--------------;
+; Ejercicio 3: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (suma-n-izq n lista-parejas)
+  (map (lambda (pareja)
+         (cons (+ (car pareja) n)
+               (cdr pareja)))
+       lista-parejas))
+
+(check-equal? (suma-n-izq 10 '((1 . 3) (0 . 9) (5 . 8) (4 . 1)))
+              '((11 . 3) (10 . 9) (15 . 8) (14 . 1)))
+
+;----;
+; b) ;
+;----;
+
+(define (aplica-2 func lista-parejas)
+  (map (lambda (pareja)
+         (func (car pareja) (cdr pareja)))
+       lista-parejas))
+
+(check-equal? (aplica-2 + '((2 . 3) (1 . -1) (5 . 4))) '(5 0 9))
+(check-equal? (aplica-2 (lambda (x y)
+                          (if (even? x)
+                              y
+                              (* y -1))) '((2 . 3) (1 . 3) (5 . 4) (8 . 10)))
+              '(3 -3 -4 10))
+
+;----;
+; c) ;
+;----;
+
+(define (filtra-simbolos lista-simbolos lista-num)
+  (filter (lambda (pareja)
+            (= (string-length (symbol->string (car pareja))) (cdr pareja)))
+          (map cons lista-simbolos lista-num)))
+
+(check-equal? (filtra-simbolos '(este es un ejercicio de examen) '(2 1 2 9 1 6))
+              '((un . 2) (ejercicio . 9) (examen . 6)))
+
+
+;--------------;
+; Ejercicio 4: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+(define (mi-index-of lista dato)
+  ; La expresión lambda crea una función. La llamamos con la
+  ; pareja resultante de foldl. De esta forma evitamos construir
+  ; una función auxiliar.
+  ; También estaría bien definir una función auxiliar a la que
+  ; se le pase la pareja resultante de foldl.
+  ((lambda (pareja)
+     (if (car pareja)
+         (cdr pareja)
+         #f))
+   (foldl (lambda (elemento resultado)
+            (cond
+              ((car resultado) resultado)
+              ((equal? dato elemento) (cons #t (cdr resultado)))
+              (else (cons #f (+ (cdr resultado) 1)))))
+          (cons #f 0)
+          lista)))
+
+(check-equal? (mi-index-of '(a b c d c) 'c) 2)
+(check-equal? (mi-index-of '(1 2 3 4 5) 10) #f)
+
+;----;
+; b) ;
+;----;
+
+(define (busca-mayor mayor? lista)
+  (foldl (lambda (dato resultado)
+           (if (mayor? dato resultado)
+               dato
+               resultado))
+         (car lista) (cdr lista)))
+
+(check-equal? (busca-mayor > '(8 3 4 1 9 6 2)) 9)
+(check-equal? (busca-mayor char>? '(#\e #\u #\i)) #\u)
+(check-equal? (busca-mayor string>? '("hola" "adios")) "hola")
+(check-equal? (busca-mayor (lambda (x y)
+                             (> (string-length x)
+                                (string-length y)))
+                           '("hola" "adios")) "adios")
+
+;----;
+; c) ;
+;----;
+
+(define (posicion-mayor mayor? lista)
+  (mi-index-of lista (busca-mayor mayor? lista)))
+
+(check-equal? (posicion-mayor > '(8 3 4 1 9 6 2)) 4)
+(check-equal? (posicion-mayor char>? '(#\e #\u #\i)) 1)
+(check-equal? (posicion-mayor string>? '("hola" "adios")) 0)
+
+
+;--------------;
+; Ejercicio 4: ;
+;--------------;
+
+;----;
+; a) ;
+;----;
+
+
+; Funciones de la práctica anterior
+; ---------------------------------------------------------------------
+
+(define (crea-parejas elemento lista)
+  (if (null? lista)
+      '()
+      (cons (cons elemento (car lista))
+            (crea-parejas elemento (cdr lista)))))
+  
+(define (producto-cartesiano lista-1 lista-2)
+  (if (null? lista-1)
+      '()
+      (append (crea-parejas (car lista-1) lista-2)
+              (producto-cartesiano (cdr lista-1) lista-2))))
+
+(define palos '(#\u2660 #\u2663 #\u2665 #\u2666))
+(define valores '(#\A #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\0 #\J #\Q #\K))
+
+(define (baraja-poker)
+  (crea-baraja
+   (producto-cartesiano palos valores)))
+
+(define (inserta-pos dato pos lista)
+  (if (= pos 0)
+      (cons dato lista)
+      (cons (car lista)
+            (inserta-pos dato (- pos 1) (cdr lista)))))
+
+(define (mezcla lista)
+  (if (null? lista)
+      '()
+      (inserta-pos (car lista)
+                   (random 0 (length lista))
+                   (mezcla (cdr lista)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+; Comentar (ramdom-seed ...), o fijar otra semilla, para provocar ;
+; otros ejemplos distintos a los que aparecen en los check-equal? ;
+(random-seed 0)                                                   ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(define baraja (mezcla (baraja-poker)))
+;baraja ; => (4♥ 0♣ 7♣ 7♦ 5♦ Q♥ 4♣ Q♠ 8♣ 8♥ 3♠ 2♣ 9♠ J♦ 4♦ 5♣ 9♥ ...)
+(check-equal? baraja '(4♥ 0♣ 7♣ 7♦ 5♦ Q♥ 4♣ Q♠ 8♣ 8♥ 3♠ 2♣ 9♠
+                       J♦ 4♦ 5♣ 9♥ K♦ 8♠ A♦ 4♠ 3♦ 6♥ 6♠ 2♥ K♥
+                       J♠ 6♣ 7♠ K♣ 6♦ Q♣ 0♠ 2♠ 5♥ 2♦ K♠ 9♦ 3♣
+                       A♣ A♥ J♣ 0♥ 3♥ A♠ 7♥ Q♦ 5♠ 8♦ 0♦ J♥ 9♣))
+
+; fin de funciones de la práctica anterior
+; ---------------------------------------------------------------------
+
+
+(define (añade-carta carta n-cartas manos)
+  (cond
+    ((null? manos) (list (list carta)))
+    ((< (length (car manos)) n-cartas) (cons (cons carta (car manos)) (cdr manos)))
+    (else (cons (list carta) manos))))
+
+(check-equal? (añade-carta 'K♦ 3 '()) '((K♦)))
+(check-equal? (añade-carta 'J♥ 3 '((2♥ 2♠) (5♦ 3♣ J♦))) '((J♥ 2♥ 2♠) (5♦ 3♣ J♦)))
+(check-equal? (añade-carta '3♠ 3 '((5♦ 3♣ J♦))) '((3♠) (5♦ 3♣ J♦)))
+
+
+(define (reparte n-manos n-cartas baraja)
+  (foldl (lambda (dato resultado)
+           (if (or (< (length resultado) n-manos)
+                   (< (length (car resultado)) n-cartas))
+               (añade-carta dato n-cartas resultado)
+               resultado))
+         '()
+         baraja))
+
+;(reparte 3 5 baraja) ; => ((4♦ J♦ 9♠ 2♣ 3♠) (8♥ 8♣ Q♠ 4♣ Q♥) (5♦ 7♦ 7♣ 0♣ 4♥))
+(check-equal? (reparte 3 5 baraja) '((4♦ J♦ 9♠ 2♣ 3♠)
+                                     (8♥ 8♣ Q♠ 4♣ Q♥)
+                                     (5♦ 7♦ 7♣ 0♣ 4♥)))
+
+;----;
+; b) ;
+;----;
+
+(define orden '(#\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9 #\0 #\J #\Q #\K #\A))
+
+(define (valor-carta carta orden)
+  (+ 1 (index-of orden (string-ref (symbol->string carta) 0))))
+
+(define (mano-ganadora lista-manos)
+  (posicion-mayor > (map (lambda (mano)
+                           (busca-mayor > (map (lambda (carta)
+                                                 (valor-carta carta orden))
+                                               mano)))
+                         lista-manos)))
+
+(define lista-manos (reparte 3 5 baraja))
+;lista-manos ; => ((4♦ J♦ 9♠ 2♣ 3♠) (8♥ 8♣ Q♠ 4♣ Q♥) (5♦ 7♦ 7♣ 0♣ 4♥))
+(check-equal? (mano-ganadora lista-manos) 1)

@@ -1,0 +1,321 @@
+
+// Solución Práctica 8: Programación funcional en Swift (1)
+
+/*
+===========
+Ejercicio 1
+===========
+*/
+
+/*
+1a) Función recursiva prefijos(prefijo:palabra:)
+*/
+
+func prefijos(prefijo: String, palabras: [String]) -> [Bool] {
+    if (palabras.isEmpty) {
+        return []
+    } else {
+        let primera = palabras[0]
+        let resto = Array(palabras.dropFirst())
+        return [primera.hasPrefix(prefijo)] + prefijos(prefijo: prefijo, palabras: resto)
+    }
+}
+
+let array = ["anterior", "antígona", "antena"]
+let prefijo = "ante"
+
+print("prefijos(prefijo: \(prefijo), palabras: \(array))")
+print(prefijos(prefijo: prefijo, palabras: array))
+
+/*
+1b) Función recursiva parejaMayorParImpar(numeros:)
+*/
+
+func mayorParImpar(numero: Int, pareja: (Int, Int)) -> (Int, Int) {
+    if (numero.isMultiple(of: 2)) {
+        return (pareja.0, max(pareja.1, numero))
+    } else {
+        return (max(pareja.0, numero), pareja.1)
+    }
+}
+
+func parejaMayorParImpar(numeros:[Int]) -> (Int, Int) {
+    if (numeros.isEmpty) {
+        return (0, 0)
+    } else {
+        let primero = numeros[0]
+        let resto = Array(numeros.dropFirst())
+        let parejaResto = parejaMayorParImpar(numeros: resto)
+        return mayorParImpar(numero: primero, pareja: parejaResto)
+    }
+}
+
+let numeros = [10, 201, 12, 103, 204, 2]
+print("parejaMayorParImpar(numeros: \(numeros))")
+print(parejaMayorParImpar(numeros: numeros))
+
+
+/*
+===========
+Ejercicio 2
+===========
+*/
+
+/*
+2a) Función recursiva compruebaParejas(_:funcion:)
+*/
+
+func compruebaParejas(_ numeros: [Int], funcion: (Int) -> Int) -> [(Int, Int)] {
+    if numeros.count <= 1 {
+        return []
+    } else {
+        let primero = numeros[0]
+        let segundo = numeros[1]
+        let resto = Array(numeros.dropFirst())
+        if funcion(primero) == segundo {
+            return [(primero, segundo)] + compruebaParejas(resto, funcion: funcion)
+        } else {
+            return compruebaParejas(resto, funcion: funcion)
+        }
+    }
+}
+
+func cuadrado(x: Int) -> Int {
+   return x * x
+}
+
+let numeros2 = [2, 4, 16, 5, 10, 100, 105]
+print("compruebaParejas(\(numeros2), funcion: cuadrado)")
+print(compruebaParejas(numeros2, funcion: cuadrado))
+
+/*
+2b) Función recursiva coinciden(parejas: [(Int, Int)], funcion: (Int) -> Int)
+*/
+
+func coinciden(parejas: [(Int, Int)], funcion: (Int) -> Int) -> [Bool] {
+    if parejas.isEmpty {
+        return []
+    } else {
+        let primera = parejas[0]
+        let resto = Array(parejas.dropFirst())
+        return [funcion(primera.0) == primera.1] + 
+                coinciden(parejas: resto, funcion: funcion)
+    }
+}
+
+let parejas2 = [(2,4), (4,14), (4,16), (5,25), (10,100)]
+print("coinciden(parejas: \(parejas2), funcion: cuadrado)")
+print(coinciden(parejas: parejas2, funcion: cuadrado))
+
+
+/*
+================================
+Ejercicio 3: aplica(movimientos:)
+================================
+*/
+
+
+enum Movimiento {
+    case deposito(Double)
+    case cargoRecibo(String, Double)
+    case cajero(Double)
+}
+
+func acumula(movimiento: Movimiento, total: (Double, [String])) -> (Double, [String]) {
+    switch movimiento {
+        case let .deposito(cantidad):
+            return (total.0 + cantidad, total.1)
+        case let .cargoRecibo(concepto, cantidad):
+            return (total.0 - cantidad, [concepto] + total.1)
+        case let .cajero(cantidad):
+            return (total.0 - cantidad, total.1)
+        }
+}
+
+func aplica(movimientos: [Movimiento]) -> (Double, [String]) {
+    if movimientos.isEmpty {
+        return (0, [])
+    } else {
+        let mov = movimientos[0]
+        let resto = Array(movimientos.dropFirst())
+        let restoAcumulado = aplica(movimientos: resto)
+        return acumula(movimiento: mov, total: restoAcumulado)
+    }
+}
+
+let movimientos: [Movimiento] = [.deposito(830.0), .cargoRecibo("Gimnasio", 45.0), .deposito(400.0), .cajero(100.0), .cargoRecibo("Fnac", 38.70)]
+print("aplica(\(movimientos)): \(aplica(movimientos: movimientos))")
+// Imprime (1046.3, ["Gimnasio", "Fnac"])
+
+
+/*
+=========================
+Ejercicio 4: ArbolBinario
+=========================
+*/
+
+indirect enum ArbolBinario {
+   case nodo(Int, ArbolBinario, ArbolBinario)
+   case vacio
+}
+
+func suma(arbolb: ArbolBinario) -> Int {
+   switch arbolb {
+   case let .nodo(dato, hijoIzq, hijoDer):
+      return dato + suma(arbolb: hijoIzq) + suma(arbolb: hijoDer)
+   case .vacio:
+      return 0
+   }
+}
+
+
+let arbol: ArbolBinario = .nodo(8, .nodo(2, .vacio, .vacio), .nodo(12, .vacio, .vacio))
+print("La suma del árbol binario es: \(suma(arbolb: arbol))")
+
+
+/*
+=========================
+Ejercicio 5: ArbolGenérico
+=========================
+*/
+
+indirect enum Arbol {
+   case nodo(Int, [Arbol])
+}
+
+
+/*
+Definimos el árbol
+
+    10
+   / | \
+  3  5  8
+  |
+  1
+*/
+
+func suma(arbol: Arbol, cumplen condicion: (Int) -> Bool ) -> Int {
+    switch arbol {
+        case let .nodo(dato, hijos): 
+            if (condicion(dato)) {
+                return dato + suma(bosque: hijos, cumplen: condicion)
+            }
+           return suma(bosque: hijos, cumplen: condicion)
+    }
+}
+
+func suma(bosque: [Arbol], cumplen condicion: (Int) -> Bool) -> Int {
+    if bosque.isEmpty {
+        return 0
+    } else {
+        let primero = bosque[0]
+        let resto = Array(bosque.dropFirst())
+        return suma(arbol: primero, cumplen: condicion) + suma(bosque: resto, cumplen: condicion)
+    }
+}
+
+// También se puede implementar la recursión usando
+// la llamada a first del array que devuelve un opcional.
+// Si existe primero se entra en la recursión y si no 
+// se devuelve el caso base
+
+/*
+func suma(bosque: [Arbol], cumplen condicion: (Int) -> Bool) -> Int {
+   if let primero = bosque.first {
+        let resto = Array(bosque.dropFirst())
+        return suma(arbol: primero, cumplen: condicion) + suma(bosque: resto, cumplen: condicion)
+    } else {
+        return 0
+    }
+}
+*/
+
+let arbol1 = Arbol.nodo(1, [])
+let arbol3 = Arbol.nodo(3, [arbol1])
+let arbol5 = Arbol.nodo(5, [])
+let arbol8 = Arbol.nodo(8, [])
+let arbol10 = Arbol.nodo(10, [arbol3, arbol5, arbol8])
+
+func esPar(x: Int) -> Bool {
+    return x % 2 == 0
+}
+
+print("La suma del árbol genérico es: \(suma(arbol: arbol10, cumplen: esPar))")
+
+
+/*
+===========
+Ejercicio 6
+===========
+*/
+
+/*
+6a) función maxOpt(_ x: Int?, _ y: Int?) -> Int?
+*/
+
+
+func maxOpt(_ x: Int?, _ y: Int?) -> Int? {
+    if let num1 = x, let num2 = y {
+        return max(num1, num2)
+    } else if let num1 = x {
+        return num1
+    } else if let num2 = y {
+        return num2
+    } else {
+        return nil
+    }
+}
+
+let res1 = maxOpt(nil, nil)
+let res2 = maxOpt(10, nil)
+let res3 = maxOpt(-10, 30)
+print("res1 = \(String(describing: res1))")
+print("res2 = \(String(describing: res2))")
+print("res3 = \(String(describing: res3))")
+
+
+/*
+6b1) Función recursiva parejaMayorParImpar2(numeros: [Int]) -> (Int?, Int?)
+*/
+
+
+func mayorParImpar2(numero: Int, pareja: (Int?, Int?)) -> (Int?, Int?) {
+    if (numero.isMultiple(of: 2)) {
+        return (pareja.0, maxOpt(pareja.1, numero))
+    } else {
+        return (maxOpt(pareja.0, numero), pareja.1)
+    }
+}
+
+func parejaMayorParImpar2(numeros:[Int]) -> (Int?, Int?) {
+    if (numeros.isEmpty) {
+        return (nil, nil)
+    } else {
+        let primero = numeros[0]
+        let resto = Array(numeros.dropFirst())
+        let parejaResto = parejaMayorParImpar2(numeros: resto)
+        return mayorParImpar2(numero: primero, pareja: parejaResto)
+    }
+}
+
+let numeros6 = [-10, 202, 12, 100, 204, 2]
+print("parejaMayorParImpar2(numeros: \(numeros6))")
+print(parejaMayorParImpar2(numeros: numeros6))
+
+/*
+6b2) Función recursiva sumaMaxParesImpares(numeros: [Int]) -> Int
+*/
+
+func sumaMaxParesImpares(numeros: [Int]) -> Int {
+    let pareja = parejaMayorParImpar2(numeros: numeros)
+    if let num1 = pareja.0, let num2 = pareja.1 {
+        return num1 + num2
+    } else if let num1 = pareja.0 {
+        return num1
+    } else {
+        return pareja.1!
+    }
+}
+
+print("sumaMaxParesImpares(numeros: \(numeros6))")
+print(sumaMaxParesImpares(numeros: numeros6))

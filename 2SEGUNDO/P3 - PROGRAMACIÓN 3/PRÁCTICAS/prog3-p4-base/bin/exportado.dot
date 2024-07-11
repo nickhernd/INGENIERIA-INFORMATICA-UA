@@ -1,0 +1,20 @@
+digraph prog3 {
+s1[label="n1", shape=circle];
+s2[label="n2", shape=circle];
+s3[label="n3", shape=circle];
+s4[label="n4", shape=circle];
+s5[label="n5", shape=circle];
+s6[label="n6", shape=circle];
+s7[label="n7", shape=circle];
+s2->s1[label="23"]
+s2->s3[label="23"]
+s1->s2[label="2"]
+s1->s3[label="3"]
+s1->s4[label="4"]
+s2->s4[label="1"]
+s4->s3[label="12"]
+s4->s5[label="23"]
+s5->s6[label="23"]
+s6->s4[label="23"]
+s5->s7[label="23"]
+}
