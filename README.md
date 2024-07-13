@@ -22,7 +22,7 @@ Este repositorio contiene materiales de estudio para la carrera de Ingeniería I
 
 #### Segundo Cuatrimestre
 - Matemáticas 2
-- Estadística
+- Estructura de los Computadores
 - Fundamentos de Bases de Datos
 - Programación 2
 - Sistemas y Tecnologías de Información
@@ -30,16 +30,16 @@ Este repositorio contiene materiales de estudio para la carrera de Ingeniería I
 ### Segundo Curso 🌿
 
 #### Primer Cuatrimestre
-- Estructura de Computadores
+- Estadística
 - Programación 3
 - Sistemas Operativos
 - Diseño de Bases de Datos
-- Análisis y Diseño de Algoritmos
+- Redes de los Computadores
 
 #### Segundo Cuatrimestre
 - Arquitectura de los Computadores
 - Lenguajes y Paradigmas de Programación
-- Redes de Computadores
+- Análisis y Diseño de Algoritmos
 - Programación y Estructuras de Datos
 - Herramientas Avanzadas para el Desarrollo de Aplicaciones
 
